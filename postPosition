@@ -1,0 +1,23 @@
+#!/usr/bin/python
+import time, math, urllib
+from gps import gps
+
+g = gps()
+lastSent = None
+while 1:
+    if 0:
+        # test mode
+        t = time.time() / 10
+        position = [37.4419 + .01 * math.sin(t),
+                    -122.1419 + .01 * math.cos(t)]
+    else:
+        g.query("p")
+        if g.fix.latitude != 0:
+            position = [g.fix.latitude, g.fix.longitude]
+
+    if position != lastSent:
+        urllib.urlopen("http://maps.bigasterisk.com/gpsClient?lat=%f&long=%f" %
+                       (position[0], position[1]))
+        lastSent = position
+    time.sleep(1)
+        

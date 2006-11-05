@@ -1,0 +1,142 @@
+from __future__ import division
+import md5, urllib, time, sys, math
+from sets import Set
+from twisted.application import internet, service
+from twisted.internet import task
+from twisted.python import log, util
+from twisted.python.components import registerAdapter
+from zope.interface import Interface
+from nevow import appserver
+from nevow import loaders, rend, static, tags as T, athena, inevow
+from nevow.vhost import VHostMonsterResource
+
+position = [0, 0]
+
+class GpsClient(rend.Page):
+    docFactory = loaders.xmlstr("<ok/>")
+    def renderHTTP(self, ctx):
+        position[:] = [float(ctx.arg('lat')), float(ctx.arg('long'))]
+        return rend.Page.renderHTTP(self, ctx)
+
+class Main(athena.LivePage):
+    addSlash = True
+    def child_(self, ctx):
+        return Main()
+
+    def child_gpsClient(self, ctx):
+        return GpsClient()
+    
+    jsClass = u"WidgetDemo.Clock"
+
+    docFactory = loaders.xmlstr("""\
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:nevow="http://nevow.com/ns/nevow/0.1"
+      xmlns:athena="http://divmod.org/ns/athena/0.7"
+>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>GPS tracking</title>
+    <nevow:invisible nevow:render="liveglue" />
+    <script src="/MochiKit.js" />
+    <style type="text/css">
+        v\:* {
+          behavior:url(#default#VML);
+        }
+        button {
+          border: 1px solid #999;
+        }
+    </style>
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRTR_g_DuS1NAVcoOs400bA5BD72GBQAwaxWwjviMOBMJnoqpHs0m2e8Pw"
+      type="text/javascript"></script>
+    <script type="text/javascript">
+
+    //<![CDATA[
+    map = 0;
+    marker = 0;
+    function load() {
+      if (!GBrowserIsCompatible()) {
+        alert('failed GBrowserIsCompatible');
+        return;
+      }
+      map = new GMap2(document.getElementById("map"));
+      map.enableContinuousZoom();
+      map.addControl(new GSmallMapControl());
+      map.addControl(new GMapTypeControl());
+      map.setCenter(new GLatLng(37.4419, -122.1419), 13);
+
+      var icon = new GIcon();
+      icon.image = "rings.png";
+      icon.iconSize = new GSize(28, 28);
+      icon.iconAnchor = new GPoint(14, 14);
+      icon.infoWindowAnchor = new GPoint(14, 14);
+
+      var point = new GLatLng(37.4419, -122.1419);
+      marker = new GMarker(point, icon)
+      map.addOverlay(marker);
+
+      MochiKit.Signal.connect(window, 'onkeypress', function (e) {
+        var k = e.key().string;
+        if (k == '+' || k == '=') { map.zoomIn(); }
+        if (k == '-') { map.zoomOut(); }
+        if (k == 'p') { server.callRemote('findGps'); }
+      });
+    }
+    function placeGps(pos) {
+        marker.setPoint(new GLatLng(pos[0], pos[1]));
+    }
+    function panTo(pos) {
+        map.panTo(new GLatLng(pos[0], pos[1]));
+    }
+    server.callRemote('startUpdates');
+    
+    // can't set body.onload, since athena is using that
+    MochiKit.DOM.addToCallStack(window, 'onload', load);
+    MochiKit.DOM.addToCallStack(window, 'onunload', GUnload);
+    //]]>
+    </script>
+  </head>
+  <body>
+    <p>
+      <button onclick="server.callRemote('findGps');">[p] Pan to gps</button>
+      <!--<input type="checkbutton"/>continuously-->
+    </p>
+    <div id="map" style="width: 100%; height: 500px" />
+  </body>
+</html>
+""")
+#    def __init__(self, *args, **kw):
+#        super(Main, self).__init__(*args, **kw)
+
+    def locateMethod(self, ctx, methodName):
+        # this is overridden from LivePage.
+        # i can't figure out what iface or rootObject are for, so i'll
+        # do my own simple dispatching
+        meth = getattr(self, methodName)
+        if meth.expose:
+            return meth
+        raise NameError("%s not exposed" % methodName)
+
+    def startUpdates(self):
+        self.loop = task.LoopingCall(self.updatePosition)
+        self.loop.start(1)
+    startUpdates.expose = True
+    
+    def findGps(self):
+        self.callRemote('panTo', position)
+    findGps.expose = True
+
+    def updatePosition(self):
+        self.callRemote('placeGps', position)
+        
+
+for f in ['rings.png', 'MochiKit.js']:
+    setattr(Main, 'child_' + f, static.File(f))
+
+main = Main()
+main.putChild('vhost', VHostMonsterResource())
+application = service.Application('maps')
+webServer = internet.TCPServer(8084, appserver.NevowSite(main))
+webServer.setServiceParent(application)
