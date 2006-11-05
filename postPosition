@@ -15,9 +15,12 @@ while 1:
         if g.fix.latitude != 0:
             position = [g.fix.latitude, g.fix.longitude]
 
-    if position != lastSent:
-        urllib.urlopen("http://maps.bigasterisk.com/gpsClient?lat=%f&long=%f" %
-                       (position[0], position[1]))
-        lastSent = position
+            if position != lastSent:
+                print "sending", position
+                urllib.urlopen("http://maps.bigasterisk.com/gpsClient?lat=%f&long=%f" %
+                               (position[0], position[1]))
+                lastSent = position
+        else:
+            print "no fix"
     time.sleep(1)
         
