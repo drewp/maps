@@ -9,24 +9,27 @@ from zope.interface import Interface
 from nevow import appserver
 from nevow import loaders, rend, static, tags as T, athena, inevow
 from nevow.vhost import VHostMonsterResource
+from louie import dispatcher
 
 position = [0, 0]
+key = open("access.key").read().strip()
 
 class GpsClient(rend.Page):
     docFactory = loaders.xmlstr("<ok/>")
     def renderHTTP(self, ctx):
+        if ctx.arg('key') != key:
+            raise ValueError("key must be set to the contents of access.key")
         position[:] = [float(ctx.arg('lat')), float(ctx.arg('long'))]
+        dispatcher.send("updatePosition")
         return rend.Page.renderHTTP(self, ctx)
 
-class Main(athena.LivePage):
+class MapWatch(athena.LivePage):
     addSlash = True
     def child_(self, ctx):
-        return Main()
+        return MapWatch()
 
     def child_gpsClient(self, ctx):
         return GpsClient()
-    
-    jsClass = u"WidgetDemo.Clock"
 
     docFactory = loaders.xmlstr("""\
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -56,14 +59,11 @@ class Main(athena.LivePage):
     //<![CDATA[
     map = 0;
     marker = 0;
+    placed = false;
     function load() {
-      if (!GBrowserIsCompatible()) {
-        alert('failed GBrowserIsCompatible');
-        return;
-      }
       map = new GMap2(document.getElementById("map"));
       map.enableContinuousZoom();
-      map.addControl(new GSmallMapControl());
+      map.addControl(new GLargeMapControl());
       map.addControl(new GMapTypeControl());
       map.setCenter(new GLatLng(37.4419, -122.1419), 13);
 
@@ -85,7 +85,11 @@ class Main(athena.LivePage):
       });
     }
     function placeGps(pos) {
-        marker.setPoint(new GLatLng(pos[0], pos[1]));
+        p = new GLatLng(pos[0], pos[1])
+        marker.setPoint(p);
+        if (!placed) {
+          map.panTo(p);
+        }
     }
     function panTo(pos) {
         map.panTo(new GLatLng(pos[0], pos[1]));
@@ -108,7 +112,7 @@ class Main(athena.LivePage):
 </html>
 """)
 #    def __init__(self, *args, **kw):
-#        super(Main, self).__init__(*args, **kw)
+#        super(MapWatch, self).__init__(*args, **kw)
 
     def locateMethod(self, ctx, methodName):
         # this is overridden from LivePage.
@@ -120,8 +124,8 @@ class Main(athena.LivePage):
         raise NameError("%s not exposed" % methodName)
 
     def startUpdates(self):
-        self.loop = task.LoopingCall(self.updatePosition)
-        self.loop.start(1)
+        self.updatePosition()
+        dispatcher.connect(self.updatePosition, "updatePosition")
     startUpdates.expose = True
     
     def findGps(self):
@@ -133,9 +137,9 @@ class Main(athena.LivePage):
         
 
 for f in ['rings.png', 'MochiKit.js']:
-    setattr(Main, 'child_' + f, static.File(f))
+    setattr(MapWatch, 'child_' + f, static.File(f))
 
-main = Main()
+main = MapWatch()
 main.putChild('vhost', VHostMonsterResource())
 application = service.Application('maps')
 webServer = internet.TCPServer(8084, appserver.NevowSite(main))
