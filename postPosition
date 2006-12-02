@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import time, math, urllib
+import time, math, urllib, socket
 from gps import gps
 
 key = open("access.key").read().strip()
@@ -12,7 +12,14 @@ while 1:
         position = [37.4419 + .01 * math.sin(t),
                     -122.1419 + .01 * math.cos(t)]
     else:
-        g.query("p")
+        try:
+            g.query("p")
+        except socket.error:
+            print "gps query failed"
+            # gps module can get wedged and not get position again
+            # until I restart the program. Hopefully re-getting the
+            # object will be enough.
+            g = gps()
         if g.fix.latitude != 0:
             position = [g.fix.latitude, g.fix.longitude]
 
