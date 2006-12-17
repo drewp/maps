@@ -6,6 +6,7 @@ key = open("access.key").read().strip()
 g = gps()
 lastSent = None
 while 1:
+    time.sleep(1)
     if 0:
         # test mode
         t = time.time() / 10
@@ -20,20 +21,22 @@ while 1:
             # until I restart the program. Hopefully re-getting the
             # object will be enough.
             g = gps()
-        if g.fix.latitude != 0:
-            position = [g.fix.latitude, g.fix.longitude]
-
-            if position != lastSent:
-                print "sending", position
-                try:
-                    urllib.urlopen(
-                      "http://maps.bigasterisk.com/gpsClient?key=%s&lat=%f&long=%f"
-                      % (key, position[0], position[1]))
-                    lastSent = position
-                except KeyboardInterrupt: raise
-                except Exception, e:
-                    print "send failed:", e.__class__, e
-        else:
+        if g.fix.latitude == 0:
             print "no fix"
-    time.sleep(1)
+            continue
+            
+        position = [g.fix.latitude, g.fix.longitude]
+
+    if position != lastSent:
+        print "sending", position
+        try:
+            urllib.urlopen(
+              "http://maps.bigasterisk.com/gpsClient?key=%s&lat=%f&long=%f"
+              % (key, position[0], position[1]))
+            lastSent = position
+        except KeyboardInterrupt: raise
+        except Exception, e:
+            print "send failed:", e.__class__, e
+
+
         

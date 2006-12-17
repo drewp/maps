@@ -13,8 +13,8 @@ from louie import dispatcher
 from twisted.web.http import HTTPFactory
 def shortLog(self, request):
     if hasattr(self, "logFile"):
-        if request.uri != "/":
-            return
+#        if request.uri != "/":
+#            return
         line = '"%s %s" %s %s (%s)\n' % (
             self._escape(request.method),
             self._escape(request.uri),
@@ -24,8 +24,7 @@ def shortLog(self, request):
         self.logFile.write(line)
 HTTPFactory.log = shortLog
 
-
-position = [0, 0]
+position = [0, 0] # out in the ocean :)
 key = open("access.key").read().strip()
 
 class GpsClient(rend.Page):
