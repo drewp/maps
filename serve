@@ -6,6 +6,7 @@ from twisted.internet import task
 from twisted.python import log, util
 from twisted.python.components import registerAdapter
 from zope.interface import Interface
+import nevow
 from nevow import appserver
 from nevow import loaders, rend, static, tags as T, athena, inevow
 from nevow.vhost import VHostMonsterResource
@@ -127,6 +128,7 @@ class MapWatch(athena.LivePage):
 for f in ['rings.png', 'MochiKit.js']:
     setattr(MapWatch, 'child_' + f, static.File(f))
 
+print "nevow", nevow.__version__
 main = MapWatch()
 main.putChild('vhost', VHostMonsterResource())
 application = service.Application('maps')
