@@ -46,8 +46,10 @@ class MapWatch(athena.LivePage):
         self.client = inevow.IRequest(ctx).getClient()
         headers = inevow.IRequest(ctx).getAllHeaders()
         if 'x-forwarded-for' in headers:
-            (hostname, _, _) = socket.gethostbyaddr(headers['x-forwarded-for'])
-            self.client = hostname
+            try:
+                (self.client, _, _) = socket.gethostbyaddr(headers['x-forwarded-for'])
+            except socket.herror:
+                self.client = headers['x-forwarded-for']
         
         self.displayedWatchers = []
         
