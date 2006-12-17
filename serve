@@ -1,5 +1,5 @@
 from __future__ import division
-import md5, urllib, time, sys, math
+import md5, urllib, time, sys, math, socket
 from sets import Set
 from twisted.application import internet, service
 from twisted.internet import task
@@ -43,6 +43,12 @@ class MapWatch(athena.LivePage):
 
     def renderHTTP(self, ctx):
         self.client = inevow.IRequest(ctx).getClient()
+        headers = inevow.IRequest(ctx).getAllHeaders()
+        print headers
+        if 'X-Forwarded-For' in headers:
+            (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(headers['X-Forwarded-For'])
+            self.client = hostname
+        
         self.displayedWatchers = []
         
         ret = athena.LivePage.renderHTTP(self, ctx)

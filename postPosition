@@ -7,7 +7,7 @@ g = gps()
 lastSent = None
 while 1:
     time.sleep(1)
-    if 0:
+    if 1:
         # test mode
         t = time.time() / 10
         position = [37.4419 + .01 * math.sin(t),
