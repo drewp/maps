@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:nevow="http://nevow.com/ns/nevow/0.1"
+      xmlns:athena="http://divmod.org/ns/athena/0.7"
+>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>GPS tracking</title>
+    <nevow:invisible nevow:render="liveglue" />
+    <script src="/MochiKit.js" />
+    <style type="text/css">
+        v\:* {
+          behavior:url(#default#VML);
+        }
+        button {
+          border: 1px solid #999;
+        }
+        span.watcherCell { 
+	  border: 1px solid red;
+          margin: 2px;
+        }
+        div.speechBubble { 
+          background: #a0ffa0;
+          margin: 1px 0px 1px 0;
+        }
+        div.youBubble {
+	  background: #ffa0a0;
+        }
+    </style>
+
+  </head>
+  <body>
+    <p>
+      <button onclick="server.callRemote('findGps');">[p] Pan to gps</button>
+      <!--<input type="checkbutton"/>continuously-->
+    </p>
+    <table><tr id="watchers"><td valign="top">Current watchers:</td></tr></table>
+    <p>
+      
+    </p>
+    <div id="map" style="width: 100%; height: 300px" />
+
+    <p>
+     See also:
+     <ul>
+      <li><a href="http://conversationswithmyself.com/maps/tracker/gmapTracker.html">a very similar project</a> except 
+          they pull (every 6 sec) instead of push, and they use much
+          heavier components (zope, mysql) and don't use gpsd
+          (why!)</li>
+
+      <li><a href="http://groups.google.com/group/Google-Maps-API/browse_thread/thread/d435b9d1d85a893a">google groups post</a> about 
+          overlaying SVG on a google maps display</li>
+<li><a href="http://mapki.com/wiki/Knowledge_Base">mapping links</a></li>
+<li><a href="http://esa.ilmari.googlepages.com/dragpolygon.htm">limited SVG on gmaps</a> - filled area only, using a google-supplied lib</li>
+     </ul>
+    </p>
+
+
+<!-- localhost:8084 -->
+<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRTFRfqDGOwfXAlOK-54sJyR4NNS5RRd2nnGh_KX3SIaiGsB7oPx4-85pA" type="text/javascript"/>
+
+
+<!--
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRTR_g_DuS1NAVcoOs400bA5BD72GBQAwaxWwjviMOBMJnoqpHs0m2e8Pw"
+      type="text/javascript"></script>
+-->
+    <script type="text/javascript">
+
+    //<![CDATA[
+    map = 0;
+    marker = 0;
+    placed = false;
+    function setupMap() {
+      map = new GMap2(document.getElementById("map"));
+      map.enableContinuousZoom();
+      map.addControl(new GLargeMapControl());
+      map.addControl(new GMapTypeControl());
+      map.setCenter(new GLatLng(37.4419, -122.1419), 13);
+
+      var icon = new GIcon();
+      icon.image = "rings.png";
+      icon.iconSize = new GSize(28, 28);
+      icon.iconAnchor = new GPoint(14, 14);
+      icon.infoWindowAnchor = new GPoint(14, 14);
+
+      var point = new GLatLng(37.4419, -122.1419);
+      marker = new GMarker(point, icon)
+      map.addOverlay(marker);
+
+      MochiKit.Signal.connect(window, 'onkeypress', function (e) {
+        var k = e.key().string;
+        if (k == '+' || k == '=') { map.zoomIn(); }
+        if (k == '-') { map.zoomOut(); }
+        if (k == 'p') { server.callRemote('findGps'); }
+        if (k == '\n') { log('enter'); }
+      });
+    }
+    function load() {
+	setupMap();
+        server.callRemote('startUpdates');
+    }
+    function placeGps(pos) {
+        p = new GLatLng(pos[0], pos[1])
+        marker.setPoint(p);
+        if (!placed) {
+          map.panTo(p);
+	  placed = true;
+        }
+    }
+    function panTo(pos) {
+        map.panTo(new GLatLng(pos[0], pos[1]));
+    }
+
+    function addWatcher(nick, itsyou) {
+      var wspan = document.createElement('TD');
+      wspan.setAttribute("class", "watcherCell");
+      wspan.setAttribute("id", 'cell-' + nick);
+      wspan.nick = nick;
+      
+      var html = '<div class="speech"></div>';
+      if (itsyou) {
+        youNick = nick;
+        html += '<div class="nick you">You are ' + nick + '</div>';
+        html += '<form onSubmit="submitMsg(); return false"><input id="msg" type="text" size="40"/></form>';
+      } else {
+            html += '<div class="nick">' + nick + '</div>';
+      }
+      wspan.innerHTML = html;
+
+      $('watchers').appendChild(wspan);
+    }
+
+    function removeWatcher(nick) {
+      $('watchers').removeChild($('cell-' + nick));
+    }
+    
+    function submitMsg() {
+        server.callRemote('submitMsg', 
+	                  $('msg').value).addCallback(
+          function () {
+            $('msg').value = "";
+	  });
+    }
+    function addMsg(nick, msg) {
+      var cell = $('cell-'+nick);
+      newBubble = document.createElement('DIV');
+      newBubble.setAttribute("class", "speechBubble");
+      if (nick == youNick) {
+        newBubble.setAttribute("class", "speechBubble youBubble");
+      }
+
+      newBubble.innerHTML = msg;
+      var speech = getFirstElementByTagAndClassName(null, "speech", cell);
+      speech.appendChild(newBubble);
+      MochiKit.Visual.roundElement(newBubble);
+      
+      if (speech.childNodes.length > 3) {
+        speech.removeChild(speech.firstChild);
+      }
+
+    }
+
+    // can't set body.onload, since athena is using that
+    MochiKit.DOM.addToCallStack(window, 'onload', load);
+    MochiKit.DOM.addToCallStack(window, 'onunload', GUnload);
+    //]]>
+    </script>
+
+
+  </body>
+</html>
