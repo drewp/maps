@@ -1,0 +1,22 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:py="http://genshi.edgewall.org/">
+  <head>
+    <title>map</title>
+  <style type="text/css">
+
+  </style>
+    <meta name="viewport" content="width=320; initial-scale=1.0; minimum-scale: .01; user-scalable=yes"/>
+  </head>
+  <body>
+    <div>last seen ${str(lastTime)}</div>
+
+    <img src="http://maps.google.com/maps/api/staticmap?center=${lastUpdate.latitude},${lastUpdate.longitude}&amp;zoom=13&amp;size=320x320&amp;maptype=roadmap&amp;markers=color:blue|label:K|${lastUpdate.latitude},${lastUpdate.longitude}&amp;sensor=false&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRQ-focQig5UzIv0XipUs_VwEtaJLBQg_vyCD_iP6cJf8eW--K-HHbtbWw" alt="map"/>
+
+
+<!--
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key="
+      type="text/javascript"></script>
+-->
+
+  </body>
+</html>
