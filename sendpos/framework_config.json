@@ -1,0 +1,5 @@
+{
+"mojoConfig" : true,
+"debuggingEnabled" : true,
+"logLevel": 99
+}
