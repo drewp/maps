@@ -6,74 +6,78 @@ function FirstAssistant() {
 }
 
 FirstAssistant.prototype.setup = function() {
-
     this.buttonAttributes = {
 	type: Mojo.Widget.activityButton
     };
 
     this.buttonModel = {
-	"buttonLabel" : "TAP HERE",
+	"buttonLabel" : "Send current position",
 	"buttonClass" : "",
 	"disabled" : false
     };
 
-	Mojo.Log.info("setup");
-
     this.controller.setupWidget("sendNow", this.buttonAttributes, this.buttonModel);
-
     Mojo.Event.listen(this.controller.get("sendNow"), Mojo.Event.tap, this.sendNow.bind(this));
 
-//    jQuery("#currentPos").text("hello");
+    this.controller.setupWidget("settings", {type: Mojo.Widget.defaultButton}, 
+				{buttonLabel: "Settings"});
+    var stageController = this.controller.stageController;
+    Mojo.Event.listen(this.controller.get("settings"), Mojo.Event.tap, 
+		      function (event) { stageController.pushScene("settings") });
+}
+
+function updateTableWithGps(gpsResponse) {
+    $('coord').update("" + Mojo.Format.formatNumber(gpsResponse.latitude, 5) + " " + 
+		      Mojo.Format.formatNumber(gpsResponse.longitude, 5));
+    var t = new Date(gpsResponse.timestamp)
+    $('lastSendTime').update(Mojo.Format.formatDate(t, {'date' : 'medium', 'time' : 'full'}));
+    $('accuracy').update("" + gpsResponse.horizAccuracy + "m horiz; " +
+			 gpsResponse.vertAccuracy+"m vert");
 }
 
 FirstAssistant.prototype.sendNow = function(event) {
-
-    Mojo.Log.info("cb");
-
+    var assistant = this;
+    var prefs = getPrefs();
     var sendNowButton = this.controller.get("sendNow");
-    Mojo.Log.info("cb2");
 
     var gpsSend = function (gpsResponse) {
-
-	new Ajax.Request("http://bigasterisk.com/map/update", {
+	updateTableWithGps(gpsResponse);
+	$('ajaxStatus').update("send...");
+	var postBody = Object.toJSON(new Hash(gpsResponse).merge({user: prefs.foaf}));
+	new Ajax.Request(prefs.postUrl, {
 	    method: 'post',
 	    contentType: 'text/json',
-	    postBody: Object.toJSON(gpsResponse),
-	    onComplete: function() {
-		Mojo.Log.info("deact");
-		sendNowButton.mojo.deactivate();
+	    postBody: postBody,
+	    onComplete: function(transport) {
+		assistant.finishSendButton(transport.responseText);
 	    },
 	});
-
-/*
-	Mojo.Log.info("loc suc3 %s ! ", globalok);
-	jQuery('#currentPos');
-	Mojo.Log.info("loc suc4");
-	jQuery('#currentPos').text('hi post');
-	Mojo.Log.info("loc suc5");
-	Mojo.Log.info("loc suc6");
-	jQuery.post('http://bigasterisk.com/', {});//gpsResponse);
-	Mojo.Log.info("sent");
-*/
     };
 
-    Mojo.Log.info("cb3");
     sendNowButton.mojo.activate();
-    Mojo.Log.info("send now");
+    $('ajaxStatus').update("request position...");
+    $('coord').update("...");
+    $('accuracy').update("...");
 
     if (0) {
 	gpsSend({'alt':500});
     } else {
 	this.controller.serviceRequest('palm://com.palm.location', {
 	    method:"getCurrentPosition",
-	    parameters:{}, // default is medium accuracy
+	    parameters:{accuracy: prefs.accuracy, maximumAge: prefs.maxCache}, 
 	    onSuccess: gpsSend,
 	    onFailure: function (response) {
-		Mojo.Log.info("loc err", response);
+		$('coord').update("GPS error " + response.errorCode);
+		assistant.finishSendButton("failed");
 	    }
 	});
     }
 
+}
+
+FirstAssistant.prototype.finishSendButton = function (statusLine) {
+    this.controller.get("sendNow").mojo.deactivate();
+    $('ajaxStatus').update(statusLine);
 }
 
 FirstAssistant.prototype.activate = function(event) {

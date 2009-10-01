@@ -1,1 +1,16 @@
-/* Put Application specific CSS here. */
+
+  #stats {
+      border-collapse: collapse;
+      width: 100%;
+  }
+  #stats td, #stats th {
+      border: 1px solid black;
+      background: #040;
+      color: #3f3;
+      font-size: 90%;
+  }
+  #stats td { 
+      padding-left: 10px;
+      background: #070;
+      color: #8f8;
+  }

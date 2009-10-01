@@ -1,7 +1,29 @@
 <div id="main" class="palm-hasheader">
     <div class="palm-header">sendpos</div>
-    <p>send gps:</p>
+
     <div x-mojo-element="Button" name="sendNow1" id="sendNow" ></div>
-    <div id="currentPos">current pos</div>
+
+    <div id="currentPos"></div>
+    
+<table id="stats">
+  <tr><th style="text-align: center">Last sendpos:</th></tr>
+  <tr><th>Upload Status</th></tr>
+  <tr><td id="ajaxStatus">(none sent)</td></tr>
+  <tr><th>Time</th></tr>
+  <tr><td id="lastSendTime">&nbsp; <!--as of 2009-09-30 15:23:50--></td></tr>
+  <tr><th>Coordinates</th></tr>
+  <tr><td id="coord">&nbsp; <!--37.35325, -122.23523--></td></tr>
+  <tr><th>Accuracy</th></tr>
+  <tr><td id="accuracy">&nbsp; <!--Current accuracy: 36m horiz, 1000m vert--></td></tr>
+</table>
+
+<!--
+<div style="opacity: .3; color: #777">
+<div>Continuous tracking: </div>
+<div x-mojo-element="Button" id="continuous"></div>
+</div>
+-->
+<div x-mojo-element="Button" id="settings"></div>
+
 
 </div>
