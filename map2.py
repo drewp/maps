@@ -47,7 +47,9 @@ class update(object):
         # u'velocity': 0L, u'vertAccuracy': 0L,
         # u'heading': 0L, "user": "http://bigasterisk.com/foaf.rdf#drewp"}
 
-        d = web.data()
+        d = web.data().strip()
+        if '"errorCode": 0' not in d:
+            raise ValueError()
         f = open("updates.log", "a")
         f.write(d+"\n")
         f.close()
