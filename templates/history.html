@@ -1,0 +1,136 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:py="http://genshi.edgewall.org/">
+  <head>
+    <title>map</title>
+    <style type="text/css">
+      body {
+	  font-family: sans-serif;
+      }
+      
+      table#meas {
+	  border-collapse:collapse;
+	  height: 500px;
+	  overflow: scroll;
+	  display: block;
+      } 
+#meas td {
+  padding: 0 15px;
+}
+      #meas tr.odd {
+	  background: #eee;
+      }
+      #meas tr.sel {
+	  background: yellow;
+      }
+      #map {
+          width: 400px;
+          height: 300px;
+border: 1px solid #ccc;
+      }
+      .olControlAttribution {
+          bottom: 3px!important; 
+      }    
+    </style>
+
+    <meta name="viewport" content="width=320; initial-scale=1.0; minimum-scale: .01; user-scalable=yes"/>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script> 
+    <script type="text/javascript" src="http://openlayers.org/api/2.6-rc1/OpenLayers.js"></script>
+
+    <script type="text/javascript">
+      // <![CDATA[
+      var map, currentMarker;
+      
+      $(document).ready(function() {
+	  map = new OpenLayers.Map('map', {
+	      'maxResolution': 360/512/16, 
+	      'numZoomLevels':15, 
+	  });
+
+	  if (1) {
+	      // works
+ 	      layer = new OpenLayers.Layer.WMS( 
+		  "OSM",
+ 		  [
+ 		      "http://t1.hypercube.telascience.org/tiles?",
+ 		      "http://t2.hypercube.telascience.org/tiles?",
+ 		      //"http://t3.hypercube.telascience.org/tiles?",
+ 		      //"http://t4.hypercube.telascience.org/tiles?"
+ 		  ],
+ 		  {layers: 'osm-4326', format: 'image/png' } );
+ 	      map.addLayer(layer);
+
+	  } else { 
+	      // prettier map, faster tile serve, but the coord system is wrong
+	      // Needs <script src="http://openstreetmap.org/openlayers/OpenStreetMap.js" type="text/javascript"></script>
+
+	      var attribution = 'Data by <a target="_parent" href="http://www.openstreetmap.org">OpenStreetMap</a>';
+	      var mapnik = new OpenLayers.Layer.OSM.Mapnik("Mapnik", {
+		  displayOutsideMaxExtent: true,
+		  wrapDateLine: true,
+		  attribution: attribution
+              });
+              map.addLayer(mapnik);
+	  }
+
+	  var markers = new OpenLayers.Layer.Markers();
+          map.addLayer(markers);
+
+	  var size = new OpenLayers.Size(28, 28);
+	  var offset = new OpenLayers.Pixel(-(size.w/2), -size.h);
+ 	  var icon = new OpenLayers.Icon(
+	      'http://maps.bigasterisk.com/rings.png',size,offset);
+
+	  currentMarker =  new OpenLayers.Marker(
+	      new OpenLayers.LonLat(-122, 38), icon);
+          markers.addMarker(currentMarker);
+	  currentMarker.map = map; // mysterious
+
+	  $('#meas tr:odd').addClass('odd');
+	  $('#meas tr:even').addClass('even');
+	  $('#meas tr.dat').click(function() {
+	      var tr=$(this);
+	      $("tr").removeClass('sel');
+	      tr.addClass('sel');
+	      var ctr = new OpenLayers.LonLat(parseFloat(tr.attr('long')), 
+		  parseFloat(tr.attr('lat')));
+	      map.moveTo(ctr, Math.max(8, map.getZoom()));
+	      currentMarker.moveTo(map.getLayerPxFromLonLat(ctr));
+	  });
+	  $('#meas tr.dat:first').click();
+	  map.zoomTo(10);  
+      });
+      // ]]>
+    </script>
+  </head>
+  <body>
+    <h1>Position history:</h1>
+    
+    <table>
+      <tr><td><div id="map"></div></td></tr>
+      <tr><td>
+	<table id="meas">
+	  <tr>
+	    <th>time</th>
+	    <th>who</th>
+	    <th>lat</th>
+	    <th>long</th>
+	    <th>accuracy (m)</th>
+	    <th>alt map</th>
+	  </tr>
+	  <tr class="dat" py:for="row in rows"
+	      lat="${row['latitude']}" long="${row['longitude']}"
+	      >
+	    <td>${prettyTime(row['timestamp'])}</td>
+	    <td>${foafName(row.get('user', ''))}</td>
+	    <td>${round(row['latitude'], 6)}</td>
+	    <td>${round(row['longitude'], 6)}</td>
+	    <td>${round(row['horizAccuracy'], 2)}</td>
+	    <td><a href="http://www.openstreetmap.org/?lat=${row['latitude']}&amp;lon=${row['longitude']}&amp;zoom=15&amp;layers=B000FTF">map</a></td>
+	  </tr>
+	</table>
+      </td>
+      </tr>
+    </table>
+    <a href="">refresh page</a>
+  </body>
+</html>

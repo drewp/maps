@@ -8,9 +8,12 @@ xmlns:py="http://genshi.edgewall.org/">
     <meta name="viewport" content="width=320; initial-scale=1.0; minimum-scale: .01; user-scalable=yes"/>
   </head>
   <body>
-    <div>last seen ${str(lastTime)}</div>
+    <div>${name} last seen ${str(lastTime)}, velocity ${lastUpdate['velocity']}, altitude ${lastUpdate.altitude} 
 
-    <img src="http://maps.google.com/maps/api/staticmap?center=${lastUpdate.latitude},${lastUpdate.longitude}&amp;zoom=13&amp;size=320x320&amp;maptype=roadmap&amp;markers=color:blue|label:K|${lastUpdate.latitude},${lastUpdate.longitude}&amp;sensor=false&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRQ-focQig5UzIv0XipUs_VwEtaJLBQg_vyCD_iP6cJf8eW--K-HHbtbWw" alt="map"/>
+<a href="history">[history]</a>
+</div>
+
+    <img src="http://maps.google.com/maps/api/staticmap?center=${lastUpdate.latitude},${lastUpdate.longitude}&amp;zoom=13&amp;size=320x320&amp;maptype=roadmap&amp;markers=color:blue|label:${name[0]}|${lastUpdate.latitude},${lastUpdate.longitude}&amp;sensor=false&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRQ-focQig5UzIv0XipUs_VwEtaJLBQg_vyCD_iP6cJf8eW--K-HHbtbWw" alt="map"/>
 
 
 <!--

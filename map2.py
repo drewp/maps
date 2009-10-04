@@ -17,6 +17,7 @@ from geopy import geocoders
 render = render_genshi('templates', auto_reload=True)
 
 urls = (r'/', 'index',
+        r'/history', 'history',
         r'/update', 'update',
         )
 
@@ -34,6 +35,7 @@ class index(object):
             lastUpdate=lastUpdate,
             lastTime=iso8601.tostring(lastUpdate['timestamp']/1000,
                                       (time.timezone, time.altzone)[time.daylight]),
+            name=foafName(lastUpdate['user']),
             )
 
 class update(object):
@@ -74,8 +76,28 @@ class update(object):
 
         return 'ok'
 
+class history(object):
+    def GET(self):
+        web.header('Content-type', 'application/xhtml+xml; charset=UTF-8')
+
+        
+        f = open("updates.log")
+        rows = []
+        for line in f:
+            rows.append(jsonlib.read(line))
+        rows.reverse()
+        return render.history(
+            rows=rows,
+            prettyTime=lambda milli: iso8601.tostring(milli / 1000,
+                                                      time.altzone # wrong
+                                                      ).replace('T', ' '),
+            foafName=foafName,
+            )
+
 def foafName(uri):
     # todo
+    if not uri:
+        return ''
     return {'http://bigasterisk.com/foaf.rdf#drewp' : 'Drew',
             'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi'}[uri]
 
