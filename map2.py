@@ -5,14 +5,13 @@ sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
   
 """
 from __future__ import division
-import sys, web, time, os, urllib,jsonlib
+import sys, web, time, jsonlib
 from xml.utils import iso8601
 from web.contrib.template import render_genshi
+from pyproj import Geod
 import restkit
 
-# svn checkout http://geopy.googlecode.com/svn/branches/reverse-geocode geopy
-sys.path.append('/my/site/maps/geopy/build/lib.linux-x86_64-2.6')
-from geopy import geocoders
+milesPerMeter = 0.000621371192237334
 
 render = render_genshi('templates', auto_reload=True)
 
@@ -34,7 +33,7 @@ class index(object):
         return render.index(
             lastUpdate=lastUpdate,
             lastTime=iso8601.tostring(lastUpdate['timestamp']/1000,
-                                      (time.timezone, time.altzone)[time.daylight]),
+                               (time.timezone, time.altzone)[time.daylight]),
             name=foafName(lastUpdate['user']),
             )
 
@@ -55,7 +54,8 @@ class update(object):
         f.close()
 
         d = jsonlib.read(d)
-        name = placeName(d['latitude'], d['longitude'])
+        name = describeLocation(d['longitude'], d['latitude'],
+                                d['horizAccuracy'])
 
         c3po = restkit.Resource('http://bang:9040/')
 
@@ -86,15 +86,70 @@ class history(object):
         f = open("updates.log")
         rows = []
         for line in f:
-            rows.append(jsonlib.read(line))
+            rows.append(jsonlib.read(line, use_float=True))
         rows.reverse()
+
+        def closest(row):
+            return describeLocation(row['longitude'], row['latitude'], row['horizAccuracy'])
+            try:
+                name, meters = closestTarget(row['longitude'], row['latitude'])
+            except ValueError, e:
+                return 'err (%s)' % e
+            if meters > 900:
+                dist = "%.3f miles" % (meters * milesPerMeter)
+            else:
+                dist = "%d m" % meters
+
+            return "%s (%s)" % (name, dist)
+
+        
+        
         return render.history(
             rows=rows,
             prettyTime=lambda milli: iso8601.tostring(milli / 1000,
                                                       time.altzone # wrong
                                                       ).replace('T', ' '),
             foafName=foafName,
+            placeName=placeName,
+            closest=closest,
             )
+
+
+locations = None
+def closestTarget(lng, lat):
+    """name and meters to the closest known target"""
+    global locations
+    if locations is None:
+        locations = jsonlib.loads(open("locations.json").read(),
+                                  use_float=True)['locations']
+
+    g = Geod(ellps='WGS84')
+    closest = (None, 0)
+    
+    for name, target in locations:
+        try:
+            _, _, dist = g.inv(lng, lat, target[1], target[0])
+        except ValueError:
+            eps = .0001 # not sure how close Geod breaks
+            if (abs(lng - target[1]) < eps and
+                abs(lat - target[0]) < eps):
+                return name, 0
+            else:
+                raise
+        if closest[0] is None or dist < closest[1]:
+            closest = name, dist
+
+    return closest
+
+def describeLocation(lng, lat, horizAccuracy):
+    name, dist = closestTarget(lng, lat)
+    if dist < horizAccuracy:
+        return "at %s (%dm away)" % (name, dist)
+    if dist < 900:
+        return "%dm from %s" % (dist, name)
+    if dist < 8000:
+        return "%.2f miles from %s" % (dist * milesPerMeter, name)
+    return placeName(lat, lng)
 
 def foafName(uri):
     # todo
@@ -104,8 +159,23 @@ def foafName(uri):
             'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi'}[uri]
 
 def placeName(lat, long):
-    return geocoders.GeoNames().reverse((lat, long))[0]
-
+    geonames = restkit.Resource('http://ws.geonames.org/')
+    addr = jsonlib.read(geonames.get("findNearestAddressJSON",
+                                     lat=lat, lng=long))
+    if 'address' in addr:
+        addr = addr['address']
+        return "%s %s, %s %s" % (addr['streetNumber'],
+                                 addr['street'] or addr['adminName2'],
+                                 addr['placename'],
+                                 addr['adminCode1'])
+    else:
+        pl = jsonlib.read(geonames.get("findNearbyPlaceNameJSON",
+                                       lat=lat, lng=long, style='short'))
+        if 'geonames' in pl:
+            return pl['geonames'][0]['name']
+        else:
+            return "no geo %r" % pl
+        
     
 if __name__ == '__main__':
     sys.argv.append("9033")

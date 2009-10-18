@@ -5,6 +5,7 @@ xmlns:py="http://genshi.edgewall.org/">
     <style type="text/css">
       body {
 	  font-family: sans-serif;
+	  font-size: 11px;
       }
       
       table#meas {
@@ -13,9 +14,9 @@ xmlns:py="http://genshi.edgewall.org/">
 	  overflow: scroll;
 	  display: block;
       } 
-#meas td {
-  padding: 0 15px;
-}
+      #meas td {
+	  padding: 0 15px;
+      }
       #meas tr.odd {
 	  background: #eee;
       }
@@ -25,7 +26,7 @@ xmlns:py="http://genshi.edgewall.org/">
       #map {
           width: 400px;
           height: 300px;
-border: 1px solid #ccc;
+	  border: 1px solid #ccc;
       }
       .olControlAttribution {
           bottom: 3px!important; 
@@ -112,16 +113,18 @@ border: 1px solid #ccc;
 	  <tr>
 	    <th>time</th>
 	    <th>who</th>
+	    <th>closest</th>
 	    <th>lat</th>
 	    <th>long</th>
 	    <th>accuracy (m)</th>
 	    <th>alt map</th>
 	  </tr>
-	  <tr class="dat" py:for="row in rows"
+	  <tr class="dat" py:for="row in rows[:100]"
 	      lat="${row['latitude']}" long="${row['longitude']}"
 	      >
 	    <td>${prettyTime(row['timestamp'])}</td>
 	    <td>${foafName(row.get('user', ''))}</td>
+	    <td>${closest(row)}</td>
 	    <td>${round(row['latitude'], 6)}</td>
 	    <td>${round(row['longitude'], 6)}</td>
 	    <td>${round(row['horizAccuracy'], 2)}</td>
