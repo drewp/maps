@@ -124,7 +124,12 @@ class MapWatch(athena.LivePage):
     submitMsg.expose = True
 
     def addMsg(self, client, msg):
-        self.callRemote('addMsg', client.nick(), msg)
+        print "fire addmsg", client, msg
+        d = self.callRemote('addMsg', client.nick(), msg)
+        def done(res):
+            print "done sending", res
+        d.addCallbacks(done, done)
+        print "sent"
         
 
 for f in ['rings.png', 'MochiKit.js']:
