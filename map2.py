@@ -8,7 +8,7 @@ from __future__ import division
 import sys, web, time, jsonlib
 from xml.utils import iso8601
 from web.contrib.template import render_genshi
-from pyproj import Geod
+from pyproj import Geod # geopy can do distances too
 import restkit
 
 milesPerMeter = 0.000621371192237334
@@ -28,7 +28,7 @@ class index(object):
 
         f = open("updates.log")
         lastLine = f.readlines()[-1]
-        lastUpdate = jsonlib.read(lastLine)
+        lastUpdate = jsonlib.read(lastLine, use_float=True)
 
         return render.index(
             lastUpdate=lastUpdate,
@@ -53,7 +53,7 @@ class update(object):
         f.write(d+"\n")
         f.close()
 
-        d = jsonlib.read(d)
+        d = jsonlib.read(d, use_float=True)
         name = describeLocation(d['longitude'], d['latitude'],
                                 d['horizAccuracy'])
 
@@ -68,7 +68,7 @@ class update(object):
         for u in tellUsers:
             c3po.post(path='', payload={
                 'user' : u,
-                'msg' : '%s position is %s' % (foafName(d['user']), name),
+                'msg' : '%s position is %s http://bigast.com/map' % (foafName(d['user']), name),
                 'mode' : 'sms'
             },
                       headers={'content-type' :
@@ -147,9 +147,9 @@ def describeLocation(lng, lat, horizAccuracy):
         return "at %s (%dm away)" % (name, dist)
     if dist < 900:
         return "%dm from %s" % (dist, name)
-    if dist < 8000:
+    if dist < 10000:
         return "%.2f miles from %s" % (dist * milesPerMeter, name)
-    return placeName(lat, lng)
+    return placeName(lng, lat)
 
 def foafName(uri):
     # todo
@@ -158,10 +158,10 @@ def foafName(uri):
     return {'http://bigasterisk.com/foaf.rdf#drewp' : 'Drew',
             'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi'}[uri]
 
-def placeName(lat, long):
+def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')
     addr = jsonlib.read(geonames.get("findNearestAddressJSON",
-                                     lat=lat, lng=long))
+                                     lat=lat, lng=long), use_float=True)
     if 'address' in addr:
         addr = addr['address']
         return "%s %s, %s %s" % (addr['streetNumber'],
@@ -170,7 +170,8 @@ def placeName(lat, long):
                                  addr['adminCode1'])
     else:
         pl = jsonlib.read(geonames.get("findNearbyPlaceNameJSON",
-                                       lat=lat, lng=long, style='short'))
+                                       lat=lat, lng=long, style='short'),
+                          use_float=True)
         if 'geonames' in pl:
             return pl['geonames'][0]['name']
         else:

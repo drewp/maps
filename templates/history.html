@@ -119,7 +119,7 @@ xmlns:py="http://genshi.edgewall.org/">
 	    <th>accuracy (m)</th>
 	    <th>alt map</th>
 	  </tr>
-	  <tr class="dat" py:for="row in rows[:100]"
+	  <tr class="dat" py:for="row in rows[:20]"
 	      lat="${row['latitude']}" long="${row['longitude']}"
 	      >
 	    <td>${prettyTime(row['timestamp'])}</td>
