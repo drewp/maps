@@ -5,12 +5,14 @@ sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
   
 """
 from __future__ import division
-import sys, web, time, jsonlib
+import sys, web, time, jsonlib, logging
 from xml.utils import iso8601
 from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
 
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger()
 milesPerMeter = 0.000621371192237334
 
 render = render_genshi('templates', auto_reload=True)
@@ -63,7 +65,7 @@ class update(object):
             'http://bigasterisk.com/foaf.rdf#drewp',
             'http://bigasterisk.com/kelsi/foaf.rdf#kelsi',
             ])
-        tellUsers.discard(d['user'])
+        #tellUsers.discard(d['user'])
 
         for u in tellUsers:
             c3po.post(path='', payload={
@@ -114,14 +116,40 @@ class history(object):
             closest=closest,
             )
 
+from lxml import etree
+def readGoogleMapsLocations():
+    ret = []
+    url = open("priv-googlemaps.url").read().strip()
+    t1 = time.time()
+    feed = restkit.Resource(url).get()
+    log.info("load google map data in %s sec" % (time.time() - t1))
+    
+    root = etree.fromstring(feed.encode('utf8'))
+    for item in root.xpath("/rss/channel/item"):
+        '''     
+          <item>
+            <guid isPermaLink="false">00047df9356ac91212e8d</guid>
+            <pubDate>Mon, 25 Jan 2010 08:46:43 +0000</pubDate>
+            <title>foo</title>
+            <author>drewp</author>
+            <georss:point>
+              37.4 -122.2
+            </georss:point>
+            <georss:elev>0.000000</georss:elev>
+          </item>
+        '''
+        point = item.find('{http://www.georss.org/georss}point').text
+        lat, lng = map(float, point.split())
+        ret.append((item.find('title').text, (lat, lng)))
+    return ret
+
 
 locations = None
 def closestTarget(lng, lat):
     """name and meters to the closest known target"""
     global locations
     if locations is None:
-        locations = jsonlib.loads(open("locations.json").read(),
-                                  use_float=True)['locations']
+        locations = readGoogleMapsLocations()
 
     g = Geod(ellps='WGS84')
     closest = (None, 0)
