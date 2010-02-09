@@ -1,7 +1,7 @@
 {
 	"id": "com.bigasterisk.sendpos",
-	"version": "1.0.0",
-	"vendor": "My Company",
+	"version": "2.0.0",
+	"vendor": "bigasterisk",
 	"type": "web",
 	"main": "index.html",
 	"title": "sendpos",

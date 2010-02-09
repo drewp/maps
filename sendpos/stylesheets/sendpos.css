@@ -1,16 +1,56 @@
+/*
+pics:
+http://static.wix.com/media/e0d98b49202bdec57a15085349ae2358.wix_mp
+http://www.ise.ncsu.edu/careersbrochure/atc1.jpg
+http://www.defense.gov/dodcmsshare/newsphoto/1996-02/960130-N-2302H-001.jpg
 
-  #stats {
-      border-collapse: collapse;
-      width: 100%;
-  }
-  #stats td, #stats th {
-      border: 1px solid black;
-      background: #040;
-      color: #3f3;
-      font-size: 90%;
-  }
-  #stats td { 
-      padding-left: 10px;
-      background: #070;
-      color: #8f8;
-  }
+*/
+div#main {
+    background: #000000;
+    padding-top: 6px;
+} 
+
+div#main, #status div:first-child {
+    color: #103F86;
+
+}
+
+#status {
+    margin-top: 4px;
+    padding-left: 10px;
+    font-size:60%;
+    color: #1B3761;
+}
+#status div:first-child {
+  font-weight: bold;
+}
+
+
+.step { 
+    border: 1px solid #788DAC;
+    background: #10489C;
+    color: #000;
+    padding: 2px;
+    -webkit-border-radius: 10px;
+}
+.step.current {
+    background: #73A4EE;
+}
+.data {
+  color: #24C036;
+}
+
+h3 {
+    padding: 0; 
+    margin: 0; 
+    font-size: 90%;
+}
+.result div { 
+    margin-left: 10px; 
+    font-size: 80%; 
+}
+span.tm { 
+    color: #46944F; 
+    font-style: italic; 
+}
+.result .stat { font-size: 70% }

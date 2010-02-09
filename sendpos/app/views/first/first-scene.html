@@ -1,29 +1,37 @@
-<div id="main" class="palm-hasheader">
-    <div class="palm-header">sendpos</div>
+<div id="main">
+  <div>
+    <div style="text-align: center">
+      <span class="step" id="getPosition">Get pos</span> <!-- click this to send now--> &#8594;
+      <span class="step" id="sendPosition">Send</span> &#8594;
+      <span class="step" id="wait">Wait <span id="nextMin">5.00</span> min</span> <!-- click to adjust time or disable -->
+    </div>
+    <div id="status"></div>
+  </div>
 
-    <div x-mojo-element="Button" name="sendNow1" id="sendNow" ></div>
+  <div class="result">
+    <h3>Current</h3>
+    <div class="data"> <span id="curtm" class="tm"></span> <span id="cur1"></span></div>
+    <div class="data stat" id="cur2"></div>
+  </div>
+  <div class="result">
+    <h3>Previous</h3>
+    <div class="data"><span id="prevtm" class="tm">...</span> <span id="prev1">...</span></div>
+  </div>
 
-    <div id="currentPos"></div>
-    
-<table id="stats">
-  <tr><th style="text-align: center">Last sendpos:</th></tr>
-  <tr><th>Upload Status</th></tr>
-  <tr><td id="ajaxStatus">(none sent)</td></tr>
-  <tr><th>Time</th></tr>
-  <tr><td id="lastSendTime">&nbsp; <!--as of 2009-09-30 15:23:50--></td></tr>
-  <tr><th>Coordinates</th></tr>
-  <tr><td id="coord">&nbsp; <!--37.35325, -122.23523--></td></tr>
-  <tr><th>Accuracy</th></tr>
-  <tr><td id="accuracy">&nbsp; <!--Current accuracy: 36m horiz, 1000m vert--></td></tr>
-</table>
+  <canvas id="map" style="border: 1px solid black; background: #444; width: 300px; height: 200px;">
+  </canvas>
+  <!-- tab map to flip between which people are displayed and how close -->
 
-<!--
-<div style="opacity: .3; color: #777">
-<div>Continuous tracking: </div>
-<div x-mojo-element="Button" id="continuous"></div>
-</div>
--->
-<div x-mojo-element="Button" id="settings"></div>
+  <div style="display: none;">
+    <form id="sendOpts">
+      <div>Send updates to:</div>
+      <div>  <input type="checkbox" name="to" checked="checked"/> kelsi</div>
+      <div>  <input type="checkbox" name="to" checked="checked"/> drew</div>
+      <div>with message:</div>
+      <div> <input type="text" name="msg"/></div>
+    </form>
+  </div>
 
-
+  <div x-mojo-element="Button" id="settings"></div>
+  (belongs in the menu)
 </div>
