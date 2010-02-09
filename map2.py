@@ -49,8 +49,8 @@ class update(object):
         # u'heading': 0L, "user": "http://bigasterisk.com/foaf.rdf#drewp"}
 
         d = web.data().strip()
-        if '"errorCode": 0' not in d:
-            raise ValueError()
+        if '"errorCode": 0' not in d and '"errorCode":0' not in d:
+            raise ValueError(d)
         f = open("updates.log", "a")
         f.write(d+"\n")
         f.close()
@@ -78,7 +78,7 @@ class update(object):
                   )
             # "eta home in 15 mins"
 
-        return 'ok'
+        return jsonlib.dumps({'posName' : name})
 
 class history(object):
     def GET(self):
