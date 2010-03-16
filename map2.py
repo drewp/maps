@@ -29,14 +29,28 @@ class index(object):
         web.header('Content-type', 'application/xhtml+xml; charset=UTF-8')
 
         f = open("updates.log")
-        lastLine = f.readlines()[-1]
-        lastUpdate = jsonlib.read(lastLine, use_float=True)
+        allUsers = set(['http://bigasterisk.com/foaf.rdf#drewp',
+                   'http://bigasterisk.com/kelsi/foaf.rdf#kelsi'])
+        updates = {}
+        for revLine in f.readlines()[::-1]:
+            update = jsonlib.read(revLine, use_float=True)
+            if update['user'] not in updates:
+                updates[update['user']] = update
+            if set(updates.keys()) == allUsers:
+                break
+
+        makeTime = lambda t: iso8601.tostring(t/1000,
+                               (time.timezone, time.altzone)[time.daylight])
+        def markers(updates):
+            return "".join(
+                "&markers=color:blue|label:%s|%s,%s" % (foafName(u['user']), u['latitude'], u['longitude']) for u in updates)
 
         return render.index(
-            lastUpdate=lastUpdate,
-            lastTime=iso8601.tostring(lastUpdate['timestamp']/1000,
-                               (time.timezone, time.altzone)[time.daylight]),
-            name=foafName(lastUpdate['user']),
+            updates=updates.values(),
+            makeTime=makeTime,
+            foafName=foafName,
+            markers=markers,
+            avgAttr=lambda recs, attr: (sum(r[attr] for r in recs) / len(recs)),
             )
 
 class update(object):
