@@ -49,6 +49,8 @@ var GetPositionMode = Class.create(Mode, {
     },
 
     gpsSuccess: function(response) {
+	// todo: if we're not in this mode anymore; disregard
+
 	Mojo.Log.info("stash "+response);
 	this.assistant.lastReponse = response;
 	window.lastResponse = response; // crazy to pass via the window, but
@@ -59,6 +61,8 @@ var GetPositionMode = Class.create(Mode, {
     },
 
     gpsFailed: function(response) {
+	// todo: if we're not in this mode; disregard
+
 	var msg = "GPS error " + response.errorCode;
 	jQuery("#cur1").html(msg);
 	var asst = this.assistant;
