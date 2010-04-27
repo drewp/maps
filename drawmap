@@ -1,0 +1,95 @@
+#!bin/python
+"""
+manual import
+dash(pts/26):/my/site/maps% mongoimport -h bang --drop -d map -c map < updates.log 
+
+"""
+import sys
+from random import randint
+from pymongo import Connection, DESCENDING
+import pygame
+#sys.path.append("Rtree-0.6.0/build/lib.linux-x86_64-2.6")
+import rtree
+
+mongo = Connection('bang', 27017)['map']['map']
+
+locs = [
+   
+
+    
+]
+
+def randColor(user):
+    if 'drewp' in user:
+        return randint(100, 155), randint(200, 255), randint(100, 255)
+    else:
+        return randint(200, 255), randint(100, 255), randint(100, 155)
+
+def drawPath(surf, color, age, p):
+    if len(p) < 2:
+        return
+    pygame.draw.aalines(surf, color, False, p)
+    if age < 5:
+        print "thicker"
+        pygame.draw.aalines(surf, color, False, [(x+1,y+1) for x,y in p])
+        
+    pygame.display.update()
+
+pygame.font.init()
+surf = pygame.display.set_mode((320, 320))
+font = pygame.font.Font("/usr/share/fonts/truetype/msttcorefonts/verdana.ttf", 9)
+
+rows = list(mongo.find().sort('timestamp', DESCENDING).limit(2000))
+points = []
+for row in rows:
+    points.append((row['longitude'], row['latitude']))
+xlo, xhi = min(x[0] for x in points), max(x[0] for x in points)
+ylo, yhi = min(x[1] for x in points), max(x[1] for x in points)
+# local area only
+xlo, xhi, ylo, yhi = -122.324604, -122.201544642, 37.4879908562, 37.5622612238
+
+
+
+margin = 30 # px
+def screenFromWorld(lng, lat):
+    return ((lat - ylo) / (yhi - ylo) * (surf.get_width() - 2*margin) + margin,
+            (lng - xlo) / (xhi - xlo) * (surf.get_height() - 2*margin) + margin)
+           
+
+topLayer = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+labels = rtree.Rtree()
+for name, (lat, lng) in locs:
+    pos = screenFromWorld(lng, lat)
+    pygame.draw.circle(surf, (0, 55, 0), pos, 3, 1)
+    txt = font.render(name, True, (255, 255, 0))
+    newRegion = (pos[0], pos[1],
+                 pos[0] + txt.get_width(), pos[1] + txt.get_height())
+    if list(labels.intersection(newRegion)):
+        continue
+    labels.add(0, newRegion)
+    topLayer.blit(txt, pos)
+pygame.display.update()
+
+prevRow = None
+path = []
+for age, row in enumerate(rows):
+    pos = screenFromWorld(row['longitude'], row['latitude'])
+    pygame.draw.circle(surf, (0, 50, 100), pos, 4, 0)
+    if (prevRow and (
+        (abs(row['timestamp'] - prevRow['timestamp']) > 10*60*1000) or
+        (row['user'] != prevRow['user'])
+        )):
+        drawPath(surf, randColor(row['user']), age, path)
+        path = []
+    path.append(pos)
+    
+    prevRow = row
+
+drawPath(surf, randColor(row['user']), age, path)
+
+topLayer.fill((255,255,255,128), None, pygame.BLEND_RGBA_MULT)
+surf.blit(topLayer, (0,0))
+pygame.display.update()
+
+
+raw_input("enter")
