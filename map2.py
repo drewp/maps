@@ -203,7 +203,7 @@ def foafName(uri):
 def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')
     addr = jsonlib.read(geonames.get("findNearestAddressJSON",
-                                     lat=lat, lng=long), use_float=True)
+                                     lat=lat, lng=long).body, use_float=True)
     if 'address' in addr:
         addr = addr['address']
         return "%s %s, %s %s" % (addr['streetNumber'],
