@@ -10,6 +10,9 @@ from xml.utils import iso8601
 from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
+from pymongo import Connection, DESCENDING
+import drawmap
+from locations import readGoogleMapsLocations
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger()
@@ -20,38 +23,62 @@ render = render_genshi('templates', auto_reload=True)
 urls = (r'/', 'index',
         r'/history', 'history',
         r'/update', 'update',
+        r'/gmap', 'gmap',
+        r'/drawMap.png', 'drawMapImg',
         )
 
 app = web.application(urls, globals())
+mongo = Connection('bang', 27017)['map']['map']
+
+makeTime = lambda t: iso8601.tostring(t/1000,
+                       (time.timezone, time.altzone)[time.daylight])
+
+def lastUpdates():
+    allUsers = set(mongo.distinct('user'))
+    allUsers.discard("?")
+    updates = {}
+    for u in allUsers:
+        updates[u] = mongo.find({'user':u}).sort('timestamp', DESCENDING).next()
+    log.info("updates: %r" % updates)
+    return updates
 
 class index(object):
     def GET(self):
         web.header('Content-type', 'application/xhtml+xml; charset=UTF-8')
+        return render.index(
+            updates=lastUpdates().values(),
+            makeTime=makeTime,
+            foafName=foafName,
+            
+            )
+        
+class drawMapImg(object):
+    def GET(self):
+        web.header('Content-type', 'image/png')
+        web.header('Cache-Control', 'private, max-age=0')
+        web.header('Expires', '-1')
+        i = web.input(width=320, height=320, history=10)
+        return drawmap.mapImage(width=int(i.width), height=int(i.height), history=int(i.history))
 
-        f = open("updates.log")
-        allUsers = set(['http://bigasterisk.com/foaf.rdf#drewp',
-                   'http://bigasterisk.com/kelsi/foaf.rdf#kelsi'])
-        updates = {}
-        for revLine in f.readlines()[::-1]:
-            update = jsonlib.read(revLine, use_float=True)
-            if update['user'] not in updates:
-                updates[update['user']] = update
-            if set(updates.keys()) == allUsers:
-                break
-
-        makeTime = lambda t: iso8601.tostring(t/1000,
-                               (time.timezone, time.altzone)[time.daylight])
+class gmap(object):
+    def GET(self):
+        web.header('Content-type', 'application/xhtml+xml; charset=UTF-8')
+        updates = lastUpdates()
         def markers(updates):
             return "".join(
-                "&markers=color:blue|label:%s|%s,%s" % (foafName(u['user']), u['latitude'], u['longitude']) for u in updates)
+                "&markers=color:blue|label:%s|%s,%s" % (
+                    foafName(u['user'])[0],
+                    u['latitude'], u['longitude']) for u in updates)
 
-        return render.index(
+        return render.gmap(
             updates=updates.values(),
             makeTime=makeTime,
             foafName=foafName,
             markers=markers,
             avgAttr=lambda recs, attr: (sum(r[attr] for r in recs) / len(recs)),
             )
+
+timeOfLastSms = {} # todo: compute this from the db instead
 
 class update(object):
     def POST(self):
@@ -65,11 +92,15 @@ class update(object):
         d = web.data().strip()
         if '"errorCode": 0' not in d and '"errorCode":0' not in d:
             raise ValueError(d)
+        if not d.get('user', '').strip():
+            raise ValueError("need user")
         f = open("updates.log", "a")
         f.write(d+"\n")
         f.close()
 
         d = jsonlib.read(d, use_float=True)
+        mongo.insert(d)
+
         name = describeLocation(d['longitude'], d['latitude'],
                                 d['horizAccuracy'])
 
@@ -79,9 +110,17 @@ class update(object):
             'http://bigasterisk.com/foaf.rdf#drewp',
             'http://bigasterisk.com/kelsi/foaf.rdf#kelsi',
             ])
+        
         #tellUsers.discard(d['user'])
 
+        now = time.time()
         for u in tellUsers:
+            
+            if u in timeOfLastSms:
+                if now < timeOfLastSms[u] + 4.9*60:
+                    continue
+            timeOfLastSms[u] = now
+                
             c3po.post(path='', payload={
                 'user' : u,
                 'msg' : '%s position is %s http://bigast.com/map' % (foafName(d['user']), name),
@@ -130,34 +169,6 @@ class history(object):
             closest=closest,
             )
 
-from lxml import etree
-def readGoogleMapsLocations():
-    ret = []
-    url = open("priv-googlemaps.url").read().strip()
-    t1 = time.time()
-    feed = restkit.Resource(url).get()
-    log.info("load google map data in %s sec" % (time.time() - t1))
-    
-    root = etree.fromstring(feed.encode('utf8'))
-    for item in root.xpath("/rss/channel/item"):
-        '''     
-          <item>
-            <guid isPermaLink="false">00047df9356ac91212e8d</guid>
-            <pubDate>Mon, 25 Jan 2010 08:46:43 +0000</pubDate>
-            <title>foo</title>
-            <author>drewp</author>
-            <georss:point>
-              37.4 -122.2
-            </georss:point>
-            <georss:elev>0.000000</georss:elev>
-          </item>
-        '''
-        point = item.find('{http://www.georss.org/georss}point').text
-        lat, lng = map(float, point.split())
-        ret.append((item.find('title').text, (lat, lng)))
-    return ret
-
-
 locations = None
 def closestTarget(lng, lat):
     """name and meters to the closest known target"""
@@ -198,7 +209,8 @@ def foafName(uri):
     if not uri:
         return ''
     return {'http://bigasterisk.com/foaf.rdf#drewp' : 'Drew',
-            'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi'}[uri]
+            'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi',
+            }.get(uri, uri)
 
 def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')

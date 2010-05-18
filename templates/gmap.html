@@ -1,0 +1,25 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+xmlns:py="http://genshi.edgewall.org/">
+  <head>
+    <title>map</title>
+  <style type="text/css">
+
+  </style>
+    <meta name="viewport" content="width=320; initial-scale=1.0; minimum-scale: .01; user-scalable=yes"/>
+  </head>
+  <body>
+    <div py:for="u in updates">${foafName(u['user'])} last seen ${str(makeTime(u['timestamp']))}, velocity ${u['velocity']}, altitude ${u.altitude} 
+
+<a href="history">[history]</a>
+</div>
+
+    <img src="http://maps.google.com/maps/api/staticmap?center=${avgAttr(updates, 'latitude')},${avgAttr(updates, 'longitude')}&amp;size=320x320&amp;maptype=roadmap&amp;sensor=false&amp;key=ABQIAAAANzpKkJuhf41xbsK-ifz3GRQ-focQig5UzIv0XipUs_VwEtaJLBQg_vyCD_iP6cJf8eW--K-HHbtbWw${markers(updates)}" alt="map"/>
+
+
+<!--
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key="
+      type="text/javascript"></script>
+-->
+
+  </body>
+</html>
