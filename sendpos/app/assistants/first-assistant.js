@@ -117,6 +117,7 @@ var SendPositionMode = Class.create(Mode, {
 
 	this.assistant.status("send to "+prefs.postUrl);
 
+
 	var xhr = jQuery.ajax({
 	    type: "POST",
 	    url: prefs.postUrl,
@@ -126,14 +127,30 @@ var SendPositionMode = Class.create(Mode, {
 					       gps)),
 	    contentType: 'text/json',
 	    dataType: 'json',
-	    timeout: 15*1000,
+	    timeout: 0,// below    5*1000,
 	    success: this.sendSuccess.bind(this),
 	    error: this.sendError.bind(this),
 	});
+
+	// seemed like jquery was having "Uncaught Error:
+	// INVALID_STATE_ERR: DOM Exception 11" that I couldn't
+	// detect, so here's my own alternate timeout system
+	var asst = this.assistant;
+	var t=this;
+        setTimeout(function() {
+	    try {
+		if (xhr.readyState != 4) {
+                    xhr.abort();
+		    t.sendError(xhr, "timed out");
+		}
+            } catch(e) { 
+		asst.status("abort error: "+e);
+	    }
+        }, 10000);
     },
 
     sendSuccess: function (msg) {
-	jQuery("#cur1").text(msg['posName']);
+	jQuery("#cur1").text(msg ? msg['posName'] : "null response"); 
 	this.assistant.status("sent");
 	this.assistant.changeMode("wait");
     },

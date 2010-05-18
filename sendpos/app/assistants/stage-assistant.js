@@ -15,9 +15,7 @@ function getPrefs() {
 	    accuracy: 1
 	};
     }
-    if (!prefs.waitMilli) { // version upgrade
-	prefs.waitMilli = 5 * 60 * 1000;
-    }
+	prefs.waitMilli = 30 * 1000;
     return prefs;
 }
 function savePrefs(prefs) {
