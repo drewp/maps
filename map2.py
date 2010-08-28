@@ -89,17 +89,20 @@ class update(object):
         # u'velocity': 0L, u'vertAccuracy': 0L,
         # u'heading': 0L, "user": "http://bigasterisk.com/foaf.rdf#drewp"}
 
-        d = web.data().strip()
-        if '"errorCode": 0' not in d and '"errorCode":0' not in d:
-            raise ValueError(d)
+        inJson = web.data().strip()
+        if '"errorCode": 0' not in inJson and '"errorCode":0' not in inJson:
+            raise ValueError(inJson)
+        
+        d = jsonlib.read(inJson, use_float=True)
+
         if not d.get('user', '').strip():
             raise ValueError("need user")
+        
         f = open("updates.log", "a")
-        f.write(d+"\n")
+        f.write(inJson+"\n")
         f.close()
 
-        d = jsonlib.read(d, use_float=True)
-        mongo.insert(d)
+        mongo.insert(d, safe=True)
 
         name = describeLocation(d['longitude'], d['latitude'],
                                 d['horizAccuracy'])
