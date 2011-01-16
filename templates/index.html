@@ -11,8 +11,23 @@ xmlns:py="http://genshi.edgewall.org/">
       <a href="history">[history]</a>
       <a href="gmap">[googlemap]</a>
     </div>
-    <img src="drawMap.png?history=10" alt="map" width="320" height="320"/>
+    <div id="map">
+      <img src="drawMap.png?history=10" alt="map" width="320" height="320"/>
+      <div>Click map to refresh <span class="loading"/></div>
+    </div>
 
-
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript"></script> 
+    <script type="text/javascript">
+      // <![CDATA[
+$(function () {
+    $("#map").click(function () {
+	var img = $("#map img")[0];
+	$("#map .loading").text("loading...");
+	img.onload = function () { $("#map .loading").text("") };
+	img.src = "drawMap.png?history=10&x="+(new Date());
+    });
+});
+      // ]]>
+    </script>
   </body>
 </html>

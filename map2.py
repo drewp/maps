@@ -5,8 +5,9 @@ sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
   
 """
 from __future__ import division
-import sys, web, time, jsonlib, logging
+import sys, web, time, jsonlib, logging, datetime
 from xml.utils import iso8601
+from dateutil.tz import tzlocal
 from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
@@ -30,8 +31,7 @@ urls = (r'/', 'index',
 app = web.application(urls, globals())
 mongo = Connection('bang', 27017)['map']['map']
 
-makeTime = lambda t: iso8601.tostring(t/1000,
-                       (time.timezone, time.altzone)[time.daylight])
+makeTime = lambda milli: datetime.datetime.fromtimestamp(milli/1000, tzlocal()).isoformat()
 
 def lastUpdates():
     allUsers = set(mongo.distinct('user'))
