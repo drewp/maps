@@ -10,14 +10,11 @@ import sys, math
 import tempfile
 from math import pi
 from random import random
-from pymongo import Connection, DESCENDING
 from locations import readGoogleMapsLocations
 #sys.path.append("Rtree-0.6.0/build/lib.linux-x86_64-2.6")
 import rtree
 
 import cairo
-
-mongo = Connection('bang', 27017)['map']['map']
 
 userColor = {
     'http://bigasterisk.com/foaf.rdf#drewp' : (.2, 1, .2),
@@ -72,7 +69,6 @@ class Coord(object):
         if inRange < 1:
             locRadii.sort()
             radius = locRadii[0]
-        print inRange, locRadii
 
         self.xlo, self.xhi = ctr[0] - radius, ctr[0] + radius
         self.ylo, self.yhi = ctr[1] - radius, ctr[1] + radius # assuming square aspect
@@ -137,11 +133,11 @@ def toPng(surf):
     return out.read()
 
 
-@profile(immediate=True)
-def mapImage(width=320, height=320, history=10):
+#@profile(immediate=True)
+def mapImage(mongo, width=320, height=320, history=10):
     surf, ctx = makeSurf(width, height)
     mongo.ensure_index([('timestamp', -1)])
-    rows = list(mongo.find().sort('timestamp', DESCENDING).limit(history))
+    rows = list(mongo.find().sort('timestamp', -1).limit(history))
     points = []
     for row in rows:
         points.append((row['longitude'], row['latitude']))

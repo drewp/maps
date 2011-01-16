@@ -12,7 +12,6 @@ from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
 from pymongo import Connection, DESCENDING
-import drawmap
 from locations import readGoogleMapsLocations
 
 logging.basicConfig(level=logging.DEBUG)
@@ -57,11 +56,13 @@ class index(object):
         
 class drawMapImg(object):
     def GET(self):
+        import drawmap
+        #reload(drawmap)
         web.header('Content-type', 'image/png')
         web.header('Cache-Control', 'private, max-age=0')
         web.header('Expires', '-1')
         i = web.input(width=320, height=320, history=10)
-        return drawmap.mapImage(width=int(i.width), height=int(i.height), history=int(i.history))
+        return drawmap.mapImage(mongo, width=int(i.width), height=int(i.height), history=int(i.history))
 
 class gmap(object):
     def GET(self):

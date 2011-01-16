@@ -3,6 +3,7 @@ xmlns:py="http://genshi.edgewall.org/">
   <head>
     <title>map</title>
     <meta name="viewport" content="width=320; initial-scale=1.0; minimum-scale: .01; user-scalable=yes"/>
+
   </head>
   <body>
     <div py:for="u in updates">${foafName(u['user'])} last seen ${str(makeTime(u['timestamp']))}, velocity ${u['velocity']}, altitude ${u.altitude} 
@@ -15,6 +16,8 @@ xmlns:py="http://genshi.edgewall.org/">
       <img src="drawMap.png?history=10" alt="map" width="320" height="320"/>
       <div>Click map to refresh <span class="loading"/></div>
     </div>
+    <div><a href="drawMap.png?width=1000&amp;height=1000">Big map 1000x1000</a></div>
+    <div><a href="drawMap.png?width=1000&amp;height=1000&amp;history=100">Big map 1000x1000, longer history 100</a></div>
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript"></script> 
     <script type="text/javascript">
