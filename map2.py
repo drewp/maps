@@ -34,9 +34,12 @@ mongo = Connection('bang', 27017)['map']['map']
 makeTime = lambda milli: datetime.datetime.fromtimestamp(milli/1000, tzlocal()).isoformat()
 
 def lastUpdates():
+    mongo.ensure_index([('user', 1), ('timestamp', -1)])
+    log.debug("distinct users")
     allUsers = set(mongo.distinct('user'))
     allUsers.discard("?")
     updates = {}
+    log.debug("first timestamps")
     for u in allUsers:
         updates[u] = mongo.find({'user':u}).sort('timestamp', DESCENDING).next()
     log.info("updates: %r" % updates)
