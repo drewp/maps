@@ -1,0 +1,4 @@
+#!/bin/sh
+LD_LIBRARY_PATH=/my/site/maps/libx86_64
+export LD_LIBRARY_PATH
+exec /my/site/maps/bin/python /my/site/maps/map2.py
