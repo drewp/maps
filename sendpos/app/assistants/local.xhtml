@@ -38,203 +38,203 @@ width: 300px;
     <script type="text/javascript">
       // <![CDATA[
 
-function dot(ctx, x, y, r, width, fill, stroke) {
-    ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2*Math.PI, true);
-    ctx.fill();
-    
-    // combine these? i dont have my docs with me
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2*Math.PI, true);
-    ctx.stroke();
-}
+      function dot(ctx, x, y, r, width, fill, stroke) {
+	  ctx.fillStyle = fill;
+	  ctx.beginPath();
+	  ctx.arc(x, y, r, 0, 2*Math.PI, true);
+	  ctx.fill();
+	  
+	  // combine these? i dont have my docs with me
+	  ctx.strokeStyle = stroke;
+	  ctx.lineWidth = width;
+	  ctx.beginPath();
+	  ctx.arc(x, y, r, 0, 2*Math.PI, true);
+	  ctx.stroke();
+      }
 
-function findExtent(placeLocs) {
-    var worldExtent = {};
-    $.each(placeLocs, function (i, place) {
-	if (worldExtent.minX == undefined || place[1][1] < worldExtent.minX) {
-	    worldExtent.minX = place[1][1];
-	}
-	if (worldExtent.maxX == undefined || place[1][1] > worldExtent.maxX) {
-	    worldExtent.maxX = place[1][1];
-	}
-	if (worldExtent.minY == undefined || place[1][0] < worldExtent.minY) {
-	    worldExtent.minY = place[1][0];
-	}
-	if (worldExtent.maxY == undefined || place[1][0] > worldExtent.maxY) {
-	    worldExtent.maxY = place[1][0];
-	}
-    });
-    return worldExtent;
-}
+      function findExtent(placeLocs) {
+	  var worldExtent = {};
+	  $.each(placeLocs, function (i, place) {
+	      if (worldExtent.minX == undefined || place[1][1] < worldExtent.minX) {
+		  worldExtent.minX = place[1][1];
+	      }
+	      if (worldExtent.maxX == undefined || place[1][1] > worldExtent.maxX) {
+		  worldExtent.maxX = place[1][1];
+	      }
+	      if (worldExtent.minY == undefined || place[1][0] < worldExtent.minY) {
+		  worldExtent.minY = place[1][0];
+	      }
+	      if (worldExtent.maxY == undefined || place[1][0] > worldExtent.maxY) {
+		  worldExtent.maxY = place[1][0];
+	      }
+	  });
+	  return worldExtent;
+      }
 
-function Grid(coords) {
-    this.draw = function (ctx, canvas) {
-	ctx.strokeStyle = "#888";
-	ctx.lineWidth=.5;
-	ctx.beginPath();
-	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .1 /*deg*/) {
-	    var cx = coords.world2canvas.transformPoint(Point(wx, 0)).x;
-	    ctx.moveTo(cx, coords.canMinY);
-	    ctx.lineTo(cx, coords.canMaxY);
-	}
-	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .1 /*deg*/) {
-	    var cy = coords.world2canvas.transformPoint(Point(0, wy)).y;
-	    ctx.moveTo(coords.canMinX, cy);
-	    ctx.lineTo(coords.canMaxX, cy);
-	}
-	ctx.stroke();
-    };
-}
+      function Grid(coords) {
+	  this.draw = function (ctx, canvas) {
+	      ctx.strokeStyle = "#888";
+	      ctx.lineWidth=.5;
+	      ctx.beginPath();
+	      for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .1 /*deg*/) {
+		  var cx = coords.world2canvas.transformPoint(Point(wx, 0)).x;
+		  ctx.moveTo(cx, coords.canMinY);
+		  ctx.lineTo(cx, coords.canMaxY);
+	      }
+	      for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .1 /*deg*/) {
+		  var cy = coords.world2canvas.transformPoint(Point(0, wy)).y;
+		  ctx.moveTo(coords.canMinX, cy);
+		  ctx.lineTo(coords.canMaxX, cy);
+	      }
+	      ctx.stroke();
+	  };
+      }
 
-function Places(coords) {
-    this.draw = function (ctx, canvas) {
-	$.each(placeLoc, function(i, place) {	
-	    // run these in importance order, use rtree to suppress
-	    // any that would intersect with more-important ones. but
-	    // if the label overlaps with another label or with a
-	    // trail, try other positions in a circle around the
-	    // point. This will look good when the label animates into
-	    // something and it spins out of the way
-	    var cx = coords.canX(place[1][1]), cy = coords.canY(place[1][0]);
+      function Places(coords) {
+	  this.draw = function (ctx, canvas) {
+	      $.each(placeLoc, function(i, place) {	
+		  // run these in importance order, use rtree to suppress
+		  // any that would intersect with more-important ones. but
+		  // if the label overlaps with another label or with a
+		  // trail, try other positions in a circle around the
+		  // point. This will look good when the label animates into
+		  // something and it spins out of the way
+		  var cx = coords.canX(place[1][1]), cy = coords.canY(place[1][0]);
 
-	    dot(ctx, cx, cy, 3, 1, 'black', 'red');
-            
-	    ctx.fillStyle = "black";
-            ctx.font = "12px sans-serif";
-            ctx.fillText(place[0], cx+5, cy+5);
-	});
-    }
-}
+		  dot(ctx, cx, cy, 3, 1, 'black', 'red');
+		  
+		  ctx.fillStyle = "black";
+		  ctx.font = "12px sans-serif";
+		  ctx.fillText(place[0], cx+5, cy+5);
+	      });
+	  }
+      }
 
-function Trails(coords, trailPoints) {
-    this.draw = function(ctx, canvas) {
+      function Trails(coords, trailPoints) {
+	  this.draw = function(ctx, canvas) {
 
-	$.each(trailPoints, function (name, pts) {
+	      $.each(trailPoints, function (name, pts) {
 
-	    ctx.strokeStyle = "#000000";
-	    ctx.lineWidth=5;
-	    ctx.beginPath();
+		  ctx.strokeStyle = "#000000";
+		  ctx.lineWidth=5;
+		  ctx.beginPath();
 
-	    $.each(pts, function (i, pt) {
-		var cx = coords.canX(pt.longitude), cy = coords.canY(pt.latitude);
-		if (i == 0) {
-		    ctx.moveTo(cx, cy);
-		} else {
-		    ctx.lineTo(cx, cy);
-		}
-	    });
-	    ctx.stroke();
+		  $.each(pts, function (i, pt) {
+		      var cx = coords.canX(pt.longitude), cy = coords.canY(pt.latitude);
+		      if (i == 0) {
+			  ctx.moveTo(cx, cy);
+		      } else {
+			  ctx.lineTo(cx, cy);
+		      }
+		  });
+		  ctx.stroke();
 
-	    $.each(pts, function (i, pt) {
-		var cx = coords.canX(pt.longitude), cy = coords.canY(pt.latitude);
-		dot(ctx, cx, cy, 3, 1, 'green', 'black');
-		
-	    });
+		  $.each(pts, function (i, pt) {
+		      var cx = coords.canX(pt.longitude), cy = coords.canY(pt.latitude);
+		      dot(ctx, cx, cy, 3, 1, 'green', 'black');
+		      
+		  });
 
-	    var whereNow = pts[pts.length - 1];
-	    var cx = coords.canX(whereNow.longitude), cy = coords.canY(whereNow.latitude);
-	    ctx.fillStyle = "black";
-	    ctx.font = "12px sans-serif";
-	    ctx.fillText(name, cx+5, cy+5);
+		  var whereNow = pts[pts.length - 1];
+		  var cx = coords.canX(whereNow.longitude), cy = coords.canY(whereNow.latitude);
+		  ctx.fillStyle = "black";
+		  ctx.font = "12px sans-serif";
+		  ctx.fillText(name, cx+5, cy+5);
 
-	});
+	      });
 
 
-    }
-}
+	  }
+      }
 
-function centerPoint(params, pt, redraw) {
-    for (var animStep=0; animStep < 50; animStep++) {
-	setTimeout(function () {
-	    params.cx = .99 * params.cx + .01 * pt.longitude;
-	    params.cy = .99 * params.cy + .01 * pt.latitude;
-	    redraw();
-	}, animStep * 50);
-    }
-}
+      function centerPoint(params, pt, redraw) {
+	  for (var animStep=0; animStep < 50; animStep++) {
+	      setTimeout(function () {
+		  params.cx = .99 * params.cx + .01 * pt.longitude;
+		  params.cy = .99 * params.cy + .01 * pt.latitude;
+		  redraw();
+	      }, animStep * 50);
+	  }
+      }
 
-    function xformFromParams(params) {
-return Matrix.scale(400/5*params.scale, 400/5*params.scale, Point(params.cx, params.cy));
-    }
+      function xformFromParams(params) {
+	  return Matrix.scale(400/5*params.scale, 400/5*params.scale, Point(params.cx, params.cy));
+      }
 
-$(function() {
-    var params = {"cx":-122.379,"cy":37.451,"scale":11.786};
+      $(function() {
+	  var params = {"cx":-122.379,"cy":37.451,"scale":11.786};
 
-    var worldExtent = findExtent(placeLoc);
+	  var worldExtent = findExtent(placeLoc);
 
-    coords = {
-	worldExtent: worldExtent,
-	world2canvas: xformFromParams(params),
-	canMinX: 0, canMaxX: 400,
-	canMinY: 0, canMaxY: 400,
-    };
+	  coords = {
+	      worldExtent: worldExtent,
+	      world2canvas: xformFromParams(params),
+	      canMinX: 0, canMaxX: 400,
+	      canMinY: 0, canMaxY: 400,
+	  };
 
-    // from http://strd6.com/2010/06/matrix-js-demo/
-    $.extend($('#mapArea').get(0).getContext('2d'), {
-        withTransform: function(matrix, block) {
-            this.save();
-	    
-            this.transform(
-		matrix.a, matrix.b, matrix.c, matrix.d,
-		matrix.tx, matrix.ty
-            );
-	    
-            try {
-		block();
-            } finally {
-		this.restore();
-            }
-        }
-    });
+	  // from http://strd6.com/2010/06/matrix-js-demo/
+	  $.extend($('#mapArea').get(0).getContext('2d'), {
+              withTransform: function(matrix, block) {
+		  this.save();
+		  
+		  this.transform(
+		      matrix.a, matrix.b, matrix.c, matrix.d,
+		      matrix.tx, matrix.ty
+		  );
+		  
+		  try {
+		      block();
+		  } finally {
+		      this.restore();
+		  }
+              }
+	  });
 
-    var trailPoints = {};
+	  var trailPoints = {};
 
-    g = $g('mapArea');
-    g.size(400, 400)
-    .add(new Grid(coords))
-    //.add(new Places(coords))
-    //.add(new Trails(coords, trailPoints))
-    .draw();
+	  g = $g('mapArea');
+	  g.size(400, 400)
+	      .add(new Grid(coords))
+	  //.add(new Places(coords))
+	  //.add(new Trails(coords, trailPoints))
+	      .draw();
 
-    $("#scale").slider({min: 1, max: 20, step: .001});
-    $("#cx").slider({min: -125, max: -120, step: .001});
-    $("#cy").slider({min:37, max: 38, step: .001});
+	  $("#scale").slider({min: 1, max: 20, step: .001});
+	  $("#cx").slider({min: -125, max: -120, step: .001});
+	  $("#cy").slider({min:37, max: 38, step: .001});
 
-    $.each(["scale", "cx", "cy"], function(i,v) {
-	$("#"+v).slider({value: params[v]});
-	$("#"+v).slider({slide: function (ev, ui) {
-	    params[v] = ui.value;
-	    $("#paramDisplay").text(JSON.stringify(params));
+	  $.each(["scale", "cx", "cy"], function(i,v) {
+	      $("#"+v).slider({value: params[v]});
+	      $("#"+v).slider({slide: function (ev, ui) {
+		  params[v] = ui.value;
+		  $("#paramDisplay").text(JSON.stringify(params));
 
-	    
-	    coords.world2canvas = xformFromParams(params);
+		  
+		  coords.world2canvas = xformFromParams(params);
 
-	    g.draw();
-	    return true;
-	}});
-    });
+		  g.draw();
+		  return true;
+	      }});
+	  });
 
-    trailPoints['drewp'] = trail1.slice(0, 4);
-    trailPoints['kelsi'] = trail2.slice(0, 4);
+	  trailPoints['drewp'] = trail1.slice(0, 4);
+	  trailPoints['kelsi'] = trail2.slice(0, 4);
 
-    for (var x=1; x < 10; x++) {
-	(function (start) {
-	setTimeout(function () {
-	    console.log("start", start);
-	    trailPoints['drewp'] = trail1.slice(start, start+5);
-	    //centerPoint(params, trailPoints['drewp'][trailPoints['drewp'].length - 1], function () { g.draw() });
-	    trailPoints['kelsi'] = trail2.slice(start, start+5);
-	    //centerPoint(params, trailPoints['kelsi'][trailPoints['kelsi'].length - 1], function () { g.draw() });
-	    g.draw();
-	}, 1000*start);
-	})(x);
-    }
-});
-// ]]>
+	  for (var x=1; x < 10; x++) {
+	      (function (start) {
+		  setTimeout(function () {
+		      console.log("start", start);
+		      trailPoints['drewp'] = trail1.slice(start, start+5);
+		      //centerPoint(params, trailPoints['drewp'][trailPoints['drewp'].length - 1], function () { g.draw() });
+		      trailPoints['kelsi'] = trail2.slice(start, start+5);
+		      //centerPoint(params, trailPoints['kelsi'][trailPoints['kelsi'].length - 1], function () { g.draw() });
+		      g.draw();
+		  }, 1000*start);
+	      })(x);
+	  }
+      });
+      // ]]>
     </script>
 
   </body>
