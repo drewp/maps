@@ -32,6 +32,7 @@ width: 300px;
     <script type="text/javascript" src="jquery-ui-1.8.4.custom/js/jquery-ui-1.8.4.custom.min.js"></script>
 
     <script type="text/javascript" src="gury/gury.js"></script>
+    <script type="text/javascript" src="matrix.js/matrix.js"></script>
     <script type="text/javascript" src="places.js"></script>
     <script type="text/javascript" src="sampledata.js"></script>
     <script type="text/javascript">
@@ -70,21 +71,18 @@ function findExtent(placeLocs) {
     return worldExtent;
 }
 
-var worldExtent = findExtent(placeLoc);
-
 function Grid(coords) {
     this.draw = function (ctx, canvas) {
-	var s = {color: "black", width: .001};
-	ctx.strokeStyle = "#000000";
+	ctx.strokeStyle = "#888";
 	ctx.lineWidth=.5;
 	ctx.beginPath();
-	for (var x = worldExtent.minX; x < worldExtent.maxX; x += .1) {
-	    var cx = coords.canX(x);
+	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .1 /*deg*/) {
+	    var cx = coords.world2canvas.transformPoint(Point(wx, 0)).x;
 	    ctx.moveTo(cx, coords.canMinY);
 	    ctx.lineTo(cx, coords.canMaxY);
 	}
-	for (var y = worldExtent.minY; y < worldExtent.maxY; y += .1) {
-	    var cy = coords.canY(y);
+	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .1 /*deg*/) {
+	    var cy = coords.world2canvas.transformPoint(Point(0, wy)).y;
 	    ctx.moveTo(coords.canMinX, cy);
 	    ctx.lineTo(coords.canMaxX, cy);
 	}
@@ -107,10 +105,11 @@ function Places(coords) {
             
 	    ctx.fillStyle = "black";
             ctx.font = "12px sans-serif";
-            //ctx.fillText(place[0], cx+5, cy+5);
+            ctx.fillText(place[0], cx+5, cy+5);
 	});
     }
 }
+
 function Trails(coords, trailPoints) {
     this.draw = function(ctx, canvas) {
 
@@ -158,23 +157,47 @@ function centerPoint(params, pt, redraw) {
     }
 }
 
+    function xformFromParams(params) {
+return Matrix.scale(400/5*params.scale, 400/5*params.scale, Point(params.cx, params.cy));
+    }
+
 $(function() {
     var params = {"cx":-122.379,"cy":37.451,"scale":11.786};
+
+    var worldExtent = findExtent(placeLoc);
+
     coords = {
+	worldExtent: worldExtent,
+	world2canvas: xformFromParams(params),
 	canMinX: 0, canMaxX: 400,
 	canMinY: 0, canMaxY: 400,
-	// projection goes here
-	canX: function (wx) { return (wx-params.cx)*params.scale*400/5; },
-	canY: function (wy) { return 400-(wy-params.cy)*params.scale*400/2; }
     };
+
+    // from http://strd6.com/2010/06/matrix-js-demo/
+    $.extend($('#mapArea').get(0).getContext('2d'), {
+        withTransform: function(matrix, block) {
+            this.save();
+	    
+            this.transform(
+		matrix.a, matrix.b, matrix.c, matrix.d,
+		matrix.tx, matrix.ty
+            );
+	    
+            try {
+		block();
+            } finally {
+		this.restore();
+            }
+        }
+    });
 
     var trailPoints = {};
 
     g = $g('mapArea');
     g.size(400, 400)
     .add(new Grid(coords))
-    .add(new Places(coords))
-    .add(new Trails(coords, trailPoints))
+    //.add(new Places(coords))
+    //.add(new Trails(coords, trailPoints))
     .draw();
 
     $("#scale").slider({min: 1, max: 20, step: .001});
@@ -186,6 +209,10 @@ $(function() {
 	$("#"+v).slider({slide: function (ev, ui) {
 	    params[v] = ui.value;
 	    $("#paramDisplay").text(JSON.stringify(params));
+
+	    
+	    coords.world2canvas = xformFromParams(params);
+
 	    g.draw();
 	    return true;
 	}});
@@ -199,9 +226,9 @@ $(function() {
 	setTimeout(function () {
 	    console.log("start", start);
 	    trailPoints['drewp'] = trail1.slice(start, start+5);
-	    centerPoint(params, trailPoints['drewp'][trailPoints['drewp'].length - 1], function () { g.draw() });
+	    //centerPoint(params, trailPoints['drewp'][trailPoints['drewp'].length - 1], function () { g.draw() });
 	    trailPoints['kelsi'] = trail2.slice(start, start+5);
-	    centerPoint(params, trailPoints['kelsi'][trailPoints['kelsi'].length - 1], function () { g.draw() });
+	    //centerPoint(params, trailPoints['kelsi'][trailPoints['kelsi'].length - 1], function () { g.draw() });
 	    g.draw();
 	}, 1000*start);
 	})(x);
