@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title></title>
+    <style type="text/css" media="all">
+      /* <![CDATA[ */
+      .ctl input {
+width: 300px;
+}
+#mapArea {
+    width: 400px;
+    height: 400px;
+    background: #dddbf4;
+}
+      /* ]]> */
+    </style>
+<link rel="Stylesheet" type="text/css" href="jquery-ui-1.8.4.custom/css/ui-lightness/jquery-ui-1.8.4.custom.css" media="all" />
+  </head>
+  <body class="tundra">
+    <div id="mapArea">
+    </div>
+
+
+    <div class="ctl">
+      <div>scale: <span id="scale" style="width: 500px; display: inline-block"/></div>
+      <div>cx: <span id="cx" style="width: 500px; display: inline-block"/></div>
+      <div>cy: <span id="cy" style="width: 500px; display: inline-block"/></div>
+
+    </div>
+
+    <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="jquery-ui-1.8.4.custom/js/jquery-ui-1.8.4.custom.min.js"></script>
+
+    <script type="text/javascript" src="dojo-release-1.5.0/dojo/dojo.js"></script>
+    <script type="text/javascript" src="../../../gury/gury.js"></script>
+    <script type="text/javascript" src="places.js"></script>
+    <script type="text/javascript" src="sampledata.js"></script>
+    <script type="text/javascript">
+      // <![CDATA[
+
+function findExtent(placeLocs) {
+    var worldExtent = {};
+    $.each(placeLocs, function (i, place) {
+	if (worldExtent.minX == undefined || place[1][1] < worldExtent.minX) {
+	    worldExtent.minX = place[1][1];
+	}
+	if (worldExtent.maxX == undefined || place[1][1] > worldExtent.maxX) {
+	    worldExtent.maxX = place[1][1];
+	}
+	if (worldExtent.minY == undefined || place[1][0] < worldExtent.minY) {
+	    worldExtent.minY = place[1][0];
+	}
+	if (worldExtent.maxY == undefined || place[1][0] > worldExtent.maxY) {
+	    worldExtent.maxY = place[1][0];
+	}
+    });
+    return worldExtent;
+}
+
+dojo.require("dojox.gfx");
+dojo.require("dojox.gfx.decompose");
+dojo.require("dojox.gfx.move");
+dojo.require("dojox.gfx.fx");
+dojo.require("dojo.colors");
+dojo.require("dojo.fx");
+
+var g = dojox.gfx, m = g.matrix;
+
+var worldExtent = findExtent(placeLoc);
+function createGrid(group) {
+    var pts = [];
+    var s = {color: "black", width: .001};
+    for (var x = worldExtent.minX; x < worldExtent.maxX; x += .1) {
+	group.createLine({x1: x, x2: x, 
+			  y1: worldExtent.minY, y2: worldExtent.maxY
+			 }).setStroke(s);
+    }
+    for (var y = worldExtent.minY; y < worldExtent.maxY; y += .1) {
+	group.createLine({y1: y, y2: y, 
+			  x1: worldExtent.minX, x2: worldExtent.maxX
+			 }).setStroke(s);
+    }
+}
+
+function createPlaces(group) {
+    /* the groups that are returned should be locally scaled to undo
+    the world scale */
+
+    var ret = [];
+
+    $.each(placeLoc, function(i, place) {	
+	var pl = group.createGroup();
+	pl.setTransform([m.translate(place[1][1],  place[1][0])]);
+
+	pl.createCircle({cx: 0, cy: 0, r: 3})
+	.setStroke({color: "black", width: .5});
+
+	pl.createText({x: 0, y: 0, text: place[0]})
+	.setFill([.4,.4,.4,1]).setFont({family: "sans-serif", size: "10px"});
+	ret.push(pl);
+    });
+    return ret;
+}
+
+function createTrail(group, trail) {
+    var fixeds = [];
+
+    var trip = group.createGroup();
+
+    var path = group.createPath();
+
+    $.each(trail, function (i, update) {
+	var pt = trip.createCircle({cx: 0, cy: 0, r: 4}).setFill([255,100,0]);
+	pt.setTransform(m.translate(update.longitude, update.latitude));
+	fixeds.push(pt);
+
+	if (!path.segments.length) {
+	    path.moveTo(update.longitude, update.latitude);
+	} else {
+	    path.lineTo(update.longitude, update.latitude);
+	}
+
+    });
+    path.setStroke({color: [0,0,0,.5], width: .0005});
+    var whereNow = trail[trail.length - 1];
+    var marker = group.createGroup();
+    var bg = marker.createRect({x: 0, y: -20, width: 50, height: 15}).setFill([120, 160, 190]);
+    var txt = marker.createText({text: whereNow.user, y: -9}).setFill([0,0,0,1]).setFont({family: "sans-serif", size: "15px"});
+
+
+    marker.setTransform(m.translate(whereNow.longitude, whereNow.latitude));
+    fixeds.push(marker);
+    return fixeds;
+}
+
+$(function() {
+    container = dojo.byId("mapArea");
+    surface = g.createSurface(container, 400, 400);
+
+    var world = surface.createGroup();
+    var grid = world.createGroup();
+    createGrid(grid);
+    var places = world.createGroup();
+
+    var fixedSizers = {}; // values are lists of shapes that should be 1.0 scale
+
+    fixedSizers.places = createPlaces(places);
+
+    var trailPoints = {};
+
+
+
+    function refreshWorldTransform(scaleChanged) {
+	var newXform = [
+	    m.translate(200, 200),
+	    m.scale(Math.pow(2, params.scale), -Math.pow(2, params.scale) * 1.2),
+	    m.translate(-params.cx, -params.cy),
+	];
+
+	world.setTransform(newXform);
+/* no effect
+	g.fx.animateTransform({
+	    shape: world,
+	    transform: newXform,
+	    duration: 500,
+	}).play();
+*/
+	if (scaleChanged) {
+	    var inverseScale;
+	    $.each(fixedSizers, function (i, shapes) { 
+		$.each(shapes, function (i, s) {
+		    if (i> 30) { return; }
+		    // assuming each set of shapes needs the same
+		    // compensation was wrong
+		    if (1 || inverseScale === undefined) {
+			var decomp = g.decompose(s._getRealMatrix());
+			inverseScale = m.scale(1.0/decomp.sx, 1.0/decomp.sy);
+		    }
+		    s.applyRightTransform(inverseScale);
+		});
+	    });
+	}
+    }
+    refreshWorldTransform();
+
+    var trailGroups = {};
+    function refreshTrail(name) {
+	if (trailGroups[name]) {
+	    world.remove(trailGroups[name]);
+	}
+	trailGroups[name] = world.createGroup();
+	fixedSizers[name] = createTrail(trailGroups[name], trailPoints[name]);
+	refreshWorldTransform(true);
+	
+	for (var animStep=0; animStep < 50; animStep++) {
+	    setTimeout(function () {
+		var pts = trailPoints[name];
+		params.cx = .99 * params.cx + .01 * pts[pts.length - 1].longitude;
+		params.cy = .99 * params.cy + .01 * pts[pts.length - 1].latitude;
+		refreshWorldTransform();
+	    }, animStep * 50);
+	}
+    }
+
+    $("#scale").slider({min: 1, max: 20, step: .001});
+    $("#cx").slider({min: -125, max: -120, step: .001});
+    $("#cy").slider({min:37, max: 38, step: .001});
+
+    $.each(["scale", "cx", "cy"], function(i,v) {
+	$("#"+v).slider({value: params[v]});
+	$("#"+v).slider({slide: function (ev, ui) {
+	    params[v] = ui.value;
+	    console.log(params);
+	    refreshWorldTransform(v == "scale");
+	    return true;
+	}});
+    });
+
+    trailPoints['drewp'] = trail1.slice(0, 4);
+    trailPoints['kelsi'] = trail2.slice(0, 4);
+    refreshTrail('drewp');
+    refreshTrail('kelsi');
+
+    for (var x=1; x < 10; x++) {
+	(function (start) {
+	setTimeout(function () {
+	    console.log("start", start);
+	    trailPoints['drewp'] = trail1.slice(start, start+5);
+	    refreshTrail('drewp');
+	    trailPoints['kelsi'] = trail2.slice(start, start+5);
+	    refreshTrail('kelsi');
+	}, 1000*start);
+	})(x);
+    }
+
+});
+// ]]>
+    </script>
+
+  </body>
+</html>
