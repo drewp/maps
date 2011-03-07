@@ -216,7 +216,7 @@ $(function() {
     g = $g('mapArea');
     g.size(coords.canMaxX, coords.canMaxY)
 	.add(new Grid(coords))
-	.add(new Places(coords, placeLoc))
+	.add(new Places(coords, placeLoc)) // should be getting these from server
 	.add(new Trails(coords, trailPoints))
 	.draw();
 
