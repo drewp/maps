@@ -1,15 +1,11 @@
 
 function dot(ctx, pt, r, width, fill, stroke) {
     ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, r, 0, 2*Math.PI, true);
-    ctx.fill();
-    
-    // combine these? i dont have my docs with me
     ctx.strokeStyle = stroke;
     ctx.lineWidth = width;
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, r, 0, 2*Math.PI, true);
+    ctx.fill();
     ctx.stroke();
 }
 
@@ -37,15 +33,19 @@ function Grid(coords) {
 	ctx.strokeStyle = "#888";
 	ctx.lineWidth=.5;
 	ctx.beginPath();
-	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .1 /*deg*/) {
+	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .02 /*deg*/) {
 	    var cx = coords.world2canvas.transformPoint(Point(wx, 0)).x;
-	    ctx.moveTo(cx, coords.canMinY);
-	    ctx.lineTo(cx, coords.canMaxY);
+	    if (cx > 0 && cx < coords.canMaxX) {
+		ctx.moveTo(cx, coords.canMinY);
+		ctx.lineTo(cx, coords.canMaxY);
+	    }
 	}
-	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .1 /*deg*/) {
+	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .01 /*deg*/) {
 	    var cy = coords.world2canvas.transformPoint(Point(0, wy)).y;
-	    ctx.moveTo(coords.canMinX, cy);
-	    ctx.lineTo(coords.canMaxX, cy);
+	    if (cy > 0 && cy < coords.canMaxY) {
+		ctx.moveTo(coords.canMinX, cy);
+		ctx.lineTo(coords.canMaxX, cy);
+	    }
 	}
 	ctx.stroke();
     };
@@ -62,7 +62,7 @@ function Places(coords, places) {
 		  };
 
 	placeCenters.insert(box, pl);
-
+	pl.worldPoint = Point(pl[1][1], pl[1][0]);
     });
 
     function searchVisiblePlaces(coords) {
@@ -87,8 +87,8 @@ function Places(coords, places) {
 	    // point. This will look good when the label animates into
 	    // something and it spins out of the way
 
-	    var wp = Point(place[1][1], place[1][0])
-	    var cp = coords.world2canvas.transformPoint(wp);
+
+	    var cp = coords.world2canvas.transformPoint(place.worldPoint);
 
 	    var name = place[0];
 	    var width = ctx.measureText(name).width;
@@ -115,7 +115,7 @@ function Trails(coords, trailPoints) {
 	$.each(trailPoints, function (name, pts) {
 
 	    ctx.strokeStyle = "#000000";
-	    ctx.lineWidth=5;
+	    ctx.lineWidth=3;
 	    ctx.beginPath();
 
 	    var dotArgs = [];
@@ -138,9 +138,14 @@ function Trails(coords, trailPoints) {
 
 	    var lastPoint = pts[pts.length - 1]
 	    var cp = coords.world2canvas.transformPoint(Point(lastPoint.longitude, lastPoint.latitude));
+
+	    var initial = name.replace(/.*#(.).*/,"$1").toUpperCase();
+
+	    dot(ctx, cp, 10, 1, {K: 'pink', D: 'lightgreen'}[initial], 'black');
+
 	    ctx.fillStyle = "black";
-	    ctx.font = "12px sans-serif";
-	    ctx.fillText(name, cp.x+5, cp.y+5);
+	    ctx.font = "16px sans-serif";
+	    ctx.fillText(initial, cp.x-6, cp.y+6);
 
 	});
 
@@ -182,9 +187,10 @@ function centerPoint(params, pt, redraw) {
     loop();
 }
 
-function xformFromParams(params) {
-    var scl = 400/5*Math.pow(params.scale, 2);
-    return Matrix.scale(scl, -scl, Point(params.cx, params.cy)).translate(200/scl, -200/scl);
+function xformFromParams(params, diameter) {
+    var scl = diameter/5*Math.pow(params.scale, 2);
+    return Matrix.scale(scl, -scl*2, Point(params.cx, params.cy))
+	.translate(diameter*.625/scl, -diameter*.25/scl);
 }
 
 $(function() {
@@ -194,34 +200,21 @@ $(function() {
 
     coords = {
 	worldExtent: worldExtent,
-	world2canvas: xformFromParams(params),
+	world2canvas: null,
+	recalc: function (params) { 
+	    this.world2canvas = xformFromParams(params, this.canMaxX);
+	},
 	getCanvas2world: function () { return this.world2canvas.inverse(); },
-	canMinX: 0, canMaxX: 400,
-	canMinY: 0, canMaxY: 400,
+	canMinX: 0, canMaxX: $("#mapArea").width(),
+	canMinY: 0, canMaxY: $("#mapArea").height(),
     };
+    coords.recalc(params);
 
-    // from http://strd6.com/2010/06/matrix-js-demo/
-    $.extend($('#mapArea').get(0).getContext('2d'), {
-        withTransform: function(matrix, block) {
-	    this.save();
-	    
-	    this.transform(
-		matrix.a, matrix.b, matrix.c, matrix.d,
-		matrix.tx, matrix.ty
-	    );
-	    
-	    try {
-		block();
-	    } finally {
-		this.restore();
-	    }
-        }
-    });
 
     var trailPoints = {};
 
     g = $g('mapArea');
-    g.size(400, 400)
+    g.size(coords.canMaxX, coords.canMaxY)
 	.add(new Grid(coords))
 	.add(new Places(coords, placeLoc))
 	.add(new Trails(coords, trailPoints))
@@ -237,7 +230,7 @@ $(function() {
 	    params[v] = ui.value;
 	    $("#paramDisplay").text(JSON.stringify(params));
 
-	    coords.world2canvas = xformFromParams(params);
+	    coords.recalc(params);
 	    g.draw();
 	    return true;
 	}});
@@ -252,10 +245,11 @@ $(function() {
     stomp.onmessageframe = function(frame) {
 	var data = JSON.parse(frame.body);
 	$.extend(trailPoints, data.trailPoints);
+
 	coords.scale = data.scale;
 	new centerPoint(params, Point(data.center.longitude, data.center.latitude),
 			function () { 
-			    coords.world2canvas = xformFromParams(params);
+			    coords.recalc(params);
 			    g.draw();
 			});
     };
