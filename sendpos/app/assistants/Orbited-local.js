@@ -858,7 +858,7 @@
             hostname = _hostname;
             port = _port;
             session = new Orbited.CometSession();
-            var sessionUrl = new Orbited.URL('/tcp');
+            var sessionUrl = new Orbited.URL('/map/tcp');
             sessionUrl.domain = Orbited.settings.hostname;
             sessionUrl.port = Orbited.settings.port;
             sessionUrl.protocol = Orbited.settings.protocol;
