@@ -8,6 +8,7 @@ from __future__ import division
 import sys, web, time, jsonlib, logging, datetime
 from xml.utils import iso8601
 from dateutil.tz import tzlocal
+from stompclient import PublishClient
 from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
@@ -25,11 +26,11 @@ urls = (r'/', 'index',
         r'/update', 'update',
         r'/gmap', 'gmap',
         r'/drawMap.png', 'drawMapImg',
+        r'/updateTrails', 'updateTrails',
         )
 
 app = web.application(urls, globals())
 mongo = Connection('bang', 27017)['map']['map']
-
 makeTime = lambda milli: datetime.datetime.fromtimestamp(milli/1000, tzlocal()).isoformat()
 
 def lastUpdates():
@@ -108,6 +109,11 @@ class update(object):
 
         mongo.insert(d, safe=True)
 
+        updateWebClients(d['user'])
+
+        return self.sendSms(d)
+
+    def sendSms(self, d):
         name = describeLocation(d['longitude'], d['latitude'],
                                 d['horizAccuracy'])
 
@@ -139,6 +145,40 @@ class update(object):
             # "eta home in 15 mins"
 
         return jsonlib.dumps({'posName' : name})
+
+class updateTrails(object):
+    def POST(self):
+        """new client is here; send everyone fresh trails"""
+        updateWebClients()
+        return '<div>ok</div>'
+    GET = POST # webos is sending get for my $.post()
+
+def updateWebClients(movingUser=None):
+    trailPoints = {}
+    old = (time.time() - 3*60*60) * 1000
+    for user in mongo.distinct('user'):
+        if user == '?':
+            continue
+        recent = list(mongo.find({'user':user}, sort=[('timestamp', -1)], limit=50))
+        recent.reverse()
+        for r in recent:
+            del r['_id']
+        if len(recent) > 1 and recent[-2]['timestamp'] < old:
+            recent = recent[-4:]
+        trailPoints[user] = recent
+
+    if movingUser:
+        ctr = trailPoints[movingUser][-1]
+    else:
+        ctrs = [pts[-1] for pts in trailPoints.values()]
+        ctr = {'longitude' : sum(c['longitude'] for c in ctrs)/len(ctrs),
+               'latitude' : sum(c['latitude'] for c in ctrs)/len(ctrs)}
+    msg = jsonlib.dumps(dict(trailPoints=trailPoints,
+                                              center=ctr,
+                                              scale=8.3))
+    stompConn = PublishClient('bang', 61614)
+    stompConn.connect()
+    stompConn.send('view', msg)
 
 class history(object):
     def GET(self):
