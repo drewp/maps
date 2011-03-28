@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /my/site/maps
+exec twistd -noy serve
