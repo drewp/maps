@@ -40,14 +40,11 @@ xmlns:py="http://genshi.edgewall.org/">
     
     <link rel="Stylesheet" type="text/css" href="static/local/jquery-ui-1.8.4.custom/css/ui-lightness/jquery-ui-1.8.4.custom.css" media="all" />
 
-
-  <canvas id="mapArea"/>
-
+    <canvas id="mapArea"/>
     <div class="ctl">
       <div>scale: <span id="scale"/></div>
       <div id="paramDisplay"/>
     </div>
-
 
     <div id="map">
       <img src="drawMap.png?history=10" alt="map" width="320" height="320"/>
@@ -62,14 +59,15 @@ xmlns:py="http://genshi.edgewall.org/">
 
     <script type="text/javascript">
       // <![CDATA[
-$(function () {
-    $("#map").click(function () {
+ 
+  $(function () {
+      $("#map").click(function () {
 	var img = $("#map img")[0];
 	$("#map .loading").text("loading...");
 	img.onload = function () { $("#map .loading").text("") };
 	img.src = "drawMap.png?history=10&x="+(new Date());
-    });
-});
+      });
+  });
       // ]]>
     </script>
   </body>
