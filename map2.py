@@ -5,7 +5,7 @@ sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
   
 """
 from __future__ import division
-import sys, web, time, jsonlib, logging, datetime, os
+import sys, web, time, jsonlib, logging, datetime, os, json
 from xml.utils import iso8601
 from dateutil.tz import tzlocal
 from stompclient import PublishClient
@@ -27,6 +27,7 @@ urls = (r'/', 'index',
         r'/gmap', 'gmap',
         r'/drawMap.png', 'drawMapImg',
         r'/updateTrails', 'updateTrails',
+        r'/places\.js', 'places',
         )
 
 app = web.application(urls, globals())
@@ -82,6 +83,12 @@ class gmap(object):
             markers=markers,
             avgAttr=lambda recs, attr: (sum(r[attr] for r in recs) / len(recs)),
             )
+
+class places(object):
+    def GET(self):
+        web.header('content-type', 'application/json')
+        locs = readGoogleMapsLocations()
+        return "var placeLoc = %s;\n" % json.dumps(locs)
 
 timeOfLastSms = {} # todo: compute this from the db instead
 
