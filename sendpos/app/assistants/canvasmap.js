@@ -1,3 +1,51 @@
+function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
+    var self=this;
+
+    this.canMinX = 0;
+    this.canMinY = 0;
+    this.canMaxX = canMaxX;
+    this.canMaxY = canMaxY;
+    this.worldExtent = worldExtent;
+
+    function recalc() {
+	var scl = self.canMaxX / 5 * Math.pow(self.scale, 2); // canvas units per world units
+	var m = Matrix.scale(scl, -scl*2);
+	var offCenter = m.transformPoint(self.center);
+	var realCenter = Point(self.canMaxX / 2, self.canMaxY / 2);
+	var fix = realCenter.subtract(offCenter);
+	m =  Matrix.translation(fix.x, fix.y).concat(m);
+	self._world2canvas = m;
+	self._canvas2world = self._world2canvas.inverse();
+    }
+
+    this.setCenter = function (center) {
+	self.center = center;
+	recalc();
+    }
+
+    this.setScale = function (scale) {
+	self.scale = scale;
+	recalc();
+    }
+
+    this.toWorld = function (canvasPoint) {
+	return self._canvas2world.transformPoint(canvasPoint);
+    }
+    this.toCanvas = function (worldPoint) {
+	return self._world2canvas.transformPoint(worldPoint);
+    }
+
+    this.viewAll = function (pts) {
+	var r = findExtent(pts);
+	self.setCenter(Point((r.minX + r.maxX) / 2, (r.minY + r.maxY) / 2));
+	var diam = Math.max(r.maxX - r.minX, r.maxY - r.minY);
+	self.setScale(Math.pow(5/diam, 1/2) * .6);
+    }
+
+    self.center = initialCenter;
+    self.scale = initialScale;
+    recalc();
+}
 
 function dot(ctx, pt, r, width, fill, stroke) {
     ctx.fillStyle = fill;
@@ -14,6 +62,9 @@ function dot(ctx, pt, r, width, fill, stroke) {
 function findExtent(placeLocs) {
     var worldExtent = {};
     $.each(placeLocs, function (i, place) {
+	if (place.longitude) {
+	    place = ['', [place.latitude, place.longitude]]; // sic
+	}
 	if (worldExtent.minX == undefined || place[1][1] < worldExtent.minX) {
 	    worldExtent.minX = place[1][1];
 	}
@@ -36,14 +87,14 @@ function Grid(coords) {
 	ctx.lineWidth=.2;
 	ctx.beginPath();
 	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .02 /*deg*/) {
-	    var cx = coords.world2canvas.transformPoint(Point(wx, 0)).x;
+	    var cx = coords.toCanvas(Point(wx, 0)).x;
 	    if (cx > 0 && cx < coords.canMaxX) {
 		ctx.moveTo(cx, coords.canMinY);
 		ctx.lineTo(cx, coords.canMaxY);
 	    }
 	}
 	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .01 /*deg*/) {
-	    var cy = coords.world2canvas.transformPoint(Point(0, wy)).y;
+	    var cy = coords.toCanvas(Point(0, wy)).y;
 	    if (cy > 0 && cy < coords.canMaxY) {
 		ctx.moveTo(coords.canMinX, cy);
 		ctx.lineTo(coords.canMaxX, cy);
@@ -62,16 +113,15 @@ function Places(coords, places) {
     });
 
     function searchVisiblePlaces(coords) {
-	var c2w = coords.getCanvas2world();
-	var wmin = c2w.transformPoint(
+	var wmin = coords.toWorld(
 	    Point(coords.canMinX - 200, // display text even when the point is off left
 		  coords.canMaxY));
-	var wmax = c2w.transformPoint(Point(coords.canMaxX, coords.canMinY));
+	var wmax = coords.toWorld(Point(coords.canMaxX, coords.canMinY));
 	var worldView = {x: wmin.x, y: wmin.y, w: wmax.x - wmin.x, h: wmax.y - wmin.y};
 	return placeCenters.search(worldView);
     }
 
-    function selectPosition(placeLabels, cp, width) {
+    function selectPosition(placeLabels, cp, width, boxHeight) {
 	// todo: if the label overlaps with another label or with a
 	// trail, try other positions in a circle around the
 	// point. This will look good when the label animates into
@@ -83,7 +133,7 @@ function Places(coords, places) {
 	    if (found) { 
 		return;
 	    }
-	    box = {x:cp.x+5, y: cp.y + 3 + ypush, w: width, h: 12};
+	    box = {x:cp.x+5, y: cp.y + 3 + ypush, w: width, h: boxHeight};
 	    if (!placeLabels.search(box).length) {
 		found = true;
 		foundDist = dist;
@@ -105,21 +155,24 @@ function Places(coords, places) {
 	visiblePlaces.sort(function (a,b) { return a.order - b.order });
 
 	$.each(visiblePlaces, function(i, place) {	
-	    var cp = coords.world2canvas.transformPoint(place.worldPoint);
+	    var cp = coords.toCanvas(place.worldPoint);
 
 	    var name = place.label;
 	    var width = ctx.measureText(name).width;
 	    
-	    dot(ctx, cp, 3, 1, 'black', 'red');
+	    dot(ctx, cp, 2, .4, 'black', 'white');
 
-	    var box = selectPosition(placeLabels, cp, width);
+	    // might look good for the labels closest to people were drawn bigger
+	    var fontSize = 10;
+
+	    var box = selectPosition(placeLabels, cp, width, fontSize);
 	    if (!box) {
 		return;
 	    }
 	    
-	    ctx.fillStyle = "rgba(0,0,0,"+(1 - box.foundDist / 8)+")";
+	    ctx.fillStyle = "rgba(0,0,0,"+(.7 - box.foundDist / 8)+")";
 
-	    ctx.font = "12px sans-serif";
+	    ctx.font = ""+fontSize+"px sans-serif";
 	    ctx.textAlign = "left";
 	    ctx.textBaseline = "alphabetic";
 
@@ -216,20 +269,38 @@ function Trails(coords, trailPoints) {
         ctx.stroke();
         ctx.closePath();
     }
-
+    var self = this;
+    self.currentPositions = [];
+    self.allVisiblePositions = [];
     this.draw = function(ctx, canvas) {
+	self.currentPositions = [];
+	self.allVisiblePositions = [];
 	$.each(trailPoints, function (name, pts) {
 	    var initial = name.replace(/.*#(.).*/,"$1").toUpperCase();
+
+	    var settings = {
+		K: {
+		    trailStroke: "rgba(200,0,0,.2)",
+		    dotFill: 'pink'
+		},
+		D: {
+		    trailStroke: "rgba(0,200,0,.2)",
+		    dotFill: 'lightgreen'
+		}
+	    }[initial]
+
 	    var dotArgs = [];
 	    var canvasPoints = []; // Point objects
 
 	    $.each(pts, function (i, pt) {
-		var cp = coords.world2canvas.transformPoint(Point(pt.longitude, pt.latitude));
+		var p = Point(pt.longitude, pt.latitude);
+		self.allVisiblePositions.push(pt);
+		var cp = coords.toCanvas(p);
 		canvasPoints.push(cp);
 		dotArgs.push([cp, 3, 1, 'rgba(0,100,0,.6)', null]);
 	    });
 
-	    ctx.strokeStyle = {K: "rgba(1,0,0,.2)", D: "rgba(0,1,0,.2)"}[initial];
+	    ctx.strokeStyle = settings.trailStroke;
 	    ctx.lineWidth=5;
 	    drawCurve(ctx, canvasPoints, makeCvs(canvasPoints));
 
@@ -238,10 +309,10 @@ function Trails(coords, trailPoints) {
 	    });
 
 	    var lastPoint = pts[pts.length - 1]
-	    var cp = coords.world2canvas.transformPoint(Point(lastPoint.longitude, lastPoint.latitude));
+	    self.currentPositions.push(lastPoint);
+	    var cp = coords.toCanvas(Point(lastPoint.longitude, lastPoint.latitude));
 
-	    dot(ctx, cp, 10, 1, {K: 'pink', D: 'lightgreen'}[initial], 'black');
-
+	    dot(ctx, cp, 10, 1, settings.dotFill, 'black');
 	    ctx.fillStyle = "black";
 	    ctx.font = "16px sans-serif";
 	    ctx.fillText(initial, cp.x-6, cp.y+6);
@@ -261,18 +332,17 @@ window.requestAnimFrame = (function(){
         };
 })();
 
-function centerPoint(params, pt, redraw) {
-
+function centerPoint(coords, pt, redraw) {
     var startTime = 1 * new Date();
     var endTime = startTime + 2000;
-    var centerStart = params.center;
+    var centerStart = coords.center;
     
     function loop() {
 	var t = 1 * new Date();
 	var f = (t - startTime) / (endTime - startTime);
 
 	var cur = centerStart.add(pt.subtract(centerStart).scale(f));
-	params.center = cur;
+	coords.setCenter(cur);
 	redraw();
 	
 	if (f < 1) {
@@ -280,12 +350,6 @@ function centerPoint(params, pt, redraw) {
 	}
     }
     loop();
-}
-
-function xformFromParams(params, diameter) {
-    var scl = diameter/5*Math.pow(params.scale, 2);
-    return Matrix.scale(scl, -scl*2, params.center)
-	.translate(diameter*.625/scl, -diameter*.25/scl);
 }
 
 function startStomp(onMessage) {
@@ -312,62 +376,50 @@ function getPosition(canvas, e) { // from inside gury.js, except I return Point
         }
     }
     
-    return Point(e.pageX - left,
-		 e.pageY - top);
+    return Point(e.pageX - left, e.pageY - top);
 }
 
-function zoomAbout(canvas, params, coords, factor, anchorCanvas) {
+function zoomAbout(canvas, coords, factor, anchorCanvas) {
     /*
       change scale by this factor, keeping the given canvas position anchored
     */
-    var anchorWorld = coords.getCanvas2world().transformPoint(anchorCanvas);
-    params.scale *= factor;
-    coords.recalc(params);
+    var anchorWorld = coords.toWorld(anchorCanvas);
+    coords.setScale(coords.scale * factor);
 
-    var newWorld = coords.getCanvas2world().transformPoint(anchorCanvas);
+    var newWorld = coords.toWorld(anchorCanvas);
     var fix = anchorWorld.subtract(newWorld);
-    params.center = params.center.add(fix);
-    coords.recalc(params);
+    coords.setCenter(coords.center.add(fix));
 }
 
-$(function() {
-    var params = {center: Point(-122.346, 37.547) ,"scale":7.849};
-
+function makeMap(id) {
     var worldExtent = findExtent(placeLoc);
 
-    coords = {
-	worldExtent: worldExtent,
-	world2canvas: null,
-	recalc: function (params) { 
-	    this.world2canvas = xformFromParams(params, this.canMaxX);
-	},
-	getCanvas2world: function () { return this.world2canvas.inverse(); },
-	canMinX: 0, canMaxX: $("#mapArea").width(),
-	canMinY: 0, canMaxY: $("#mapArea").height(),
-    };
-    coords.recalc(params);
+    var coords = new Coords($("#mapArea").width(), $("#mapArea").height(), 
+			    worldExtent,
+			    Point(-122.346, 37.547), 7.849);
 
     var trailPoints = {};
 
-    g = $g('mapArea');
+    g = $g(id);
+
+    var trails = new Trails(coords, trailPoints);
 
     g.size(coords.canMaxX, coords.canMaxY)
 	.add(new Grid(coords))
 	.add('places', new Places(coords, placeLoc)) // should be getting these from server
-	.add(new Trails(coords, trailPoints))
+	.add(trails)
 	.draw();
 
     var dragStartWorld;
     function onMove(e) {
 	var pos = getPosition(g.canvas, e);
-	currentWorld = coords.getCanvas2world().transformPoint(pos);
-	params.center = params.center.add(dragStartWorld.subtract(currentWorld));
-	coords.recalc(params);
+	currentWorld = coords.toWorld(pos);
+	coords.setCenter(coords.center.add(dragStartWorld.subtract(currentWorld)));
 	g.draw();
     }
     $(g.canvas).mousedown(function (e) {
 	var pos = getPosition(g.canvas, e);
-	dragStartWorld = coords.getCanvas2world().transformPoint(pos);
+	dragStartWorld = coords.toWorld(pos);
 	g.canvas.onmousemove = onMove;
     }).mouseup(function (e) {
 	g.canvas.onmousemove = null;
@@ -375,8 +427,8 @@ $(function() {
 	g.canvas.onmousemove = null;
     }).bind('mousewheel', function (event, delta) {
 	var mouseCanvas = getPosition(g.canvas, event);
-	zoomAbout(g.canvas, params, coords, Math.pow(1.3, delta), mouseCanvas);
-	$("#scale").slider({value: params.scale});
+	zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
+	$("#scale").slider({value: coords.scale});
 	g.draw();
 	return false;
     });
@@ -385,29 +437,32 @@ $(function() {
     $("#cx").slider({min: -122.5, max: -121.8, step: .001});
     $("#cy").slider({min:37.2, max: 38.5, step: .001});
 
-    $.each(["scale"], function(i,v) {
-	$("#"+v).slider({value: params[v]});
-	$("#"+v).slider({slide: function (ev, ui) {
 
-	    params[v] = ui.value;
-
-	    $("#paramDisplay").text(JSON.stringify(params));
-
-	    coords.recalc(params);
-	    g.draw();
-	    return true;
-	}});
-    });
+    $("#scale").slider({value: coords.scale});
+    $("#scale").slider({slide: function (ev, ui) {
+	coords.setScale(ui.value);
+	$("#paramDisplay").text(JSON.stringify(coords));
+	g.draw();
+	return true;
+    }});
 
     startStomp(function (data) {
 	$.extend(trailPoints, data.trailPoints);
 
-	coords.scale = data.scale;
-	new centerPoint(params, Point(data.center.longitude, data.center.latitude),
+	coords.setScale(data.scale);
+	new centerPoint(coords, Point(data.center.longitude, data.center.latitude),
 			function () { 
-			    coords.recalc(params);
 			    g.draw();
 			});
     }); 
-
-});
+    return {
+	showPeople: function () {
+	    coords.viewAll(trails.currentPositions);
+	    g.draw();
+	},
+	showTrails: function () {
+	    coords.viewAll(trails.allVisiblePositions);
+	    g.draw();
+	}
+    }
+}
