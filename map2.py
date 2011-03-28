@@ -5,7 +5,7 @@ sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
   
 """
 from __future__ import division
-import sys, web, time, jsonlib, logging, datetime
+import sys, web, time, jsonlib, logging, datetime, os
 from xml.utils import iso8601
 from dateutil.tz import tzlocal
 from stompclient import PublishClient
@@ -52,7 +52,7 @@ class index(object):
             updates=lastUpdates().values(),
             makeTime=makeTime,
             foafName=foafName,
-            
+            bundleId=int(os.path.getmtime("static/bundle.js")),
             )
         
 class drawMapImg(object):

@@ -60,19 +60,7 @@ xmlns:py="http://genshi.edgewall.org/">
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js" type="text/javascript"></script> 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="static/local/Orbited-local.js"></script>
-    <script type="text/javascript">
-      TCPSocket = Orbited.TCPSocket
-      Orbited.settings.streaming = false; // for firefox 3.5
-    </script>
-    <script type="text/javascript" src="static/local/orbited/protocols/stomp/stomp.js"></script>
-
-    <script type="text/javascript" src="static/local/gury/gury.js"></script>
-    <script type="text/javascript" src="static/local/matrix.js/matrix.js"></script>
-    <script type="text/javascript" src="static/local/RTree/src/rtree.js"></script>
-    <script type="text/javascript" src="static/local/places.js"></script>
-    <script type="text/javascript" src="static/local/canvasmap.js"></script>
-
+    <script type="text/javascript" src="static/bundle.js?v=${bundleId}"></script>
 
     <script type="text/javascript">
       // <![CDATA[
