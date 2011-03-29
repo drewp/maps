@@ -153,6 +153,7 @@ var SendPositionMode = Class.create(Mode, {
 	jQuery("#cur1").text(msg ? msg['posName'] : "null response"); 
 	this.assistant.status("sent");
 	this.assistant.changeMode("wait");
+	asst.map.pollTrails();
     },
 
     sendError: function (xhr, status, error) {
@@ -220,12 +221,16 @@ var WaitMode = Class.create(Mode, {
 
 });
 
-
-
-
-
-
-
+FirstAssistant.prototype.handleCommand = function (event) {
+    if (event.type == Mojo.Event.command) {
+	Mojo.Log.info("commnand", JSON.stringify(event));
+	switch(event.command) {
+	case "do-prefs":
+	    this.controller.stageController.pushScene("settings");
+	    break;
+	}
+    }
+}
 
 FirstAssistant.prototype.setup = function() {
     var prefs = getPrefs();
@@ -241,40 +246,44 @@ FirstAssistant.prototype.setup = function() {
 
     new WaitMode(this).exit();
 
-/*
 
-    this.buttonAttributes = {
-	type: Mojo.Widget.activityButton
-    };
+    this.controller.setupWidget(
+	Mojo.Menu.appMenu,
+	this.attributes = {
+	    // couldn't find how to attach to the existing one
+	    omitDefaultItems: true 
+	},
+	this.model = {
+	    visible: true,
+	    items: [ 
+		{ label: "Preferences", command: 'do-prefs' },
+	    ]
+	}
+    );
 
-    this.buttonModel = {
-	"buttonLabel" : "Send current position",
-	"buttonClass" : "",
-	"disabled" : false
-    };
-    this.controller.setupWidget("sendNow", this.buttonAttributes, this.buttonModel);
-    Mojo.Event.listen(this.controller.get("sendNow"), Mojo.Event.tap, this.sendNow.bind(this));
+    asst.map = makeMap("map");
 
-*/
-    this.controller.setupWidget("settings", {type: Mojo.Widget.defaultButton}, 
-				{buttonLabel: "Settings"});
-    var stageController = this.controller.stageController;
-    Mojo.Event.listen(this.controller.get("settings"), Mojo.Event.tap, 
-		      function (event) { stageController.pushScene("settings") });
+    this.controller.setupWidget("showPeople", 
+				{type: Mojo.Widget.defaultButton}, 
+				{buttonLabel: "Show People"});
+    Mojo.Event.listen(this.controller.get("showPeople"), Mojo.Event.tap,
+		      function (event) { asst.map.showPeople() });
 
-    var canvas = document.getElementById("map");
-    var context = canvas.getContext('2d');
-    context.fillText("K", 50, 50);
-    context.fillText("D", 150, 80);
-    context.fillText("home", 30, 60);
-    context.fillText("drew work", 140, 50);
-    
-    context.beginPath();
-    context.lineWidth = .5;
-    context.moveTo(50, 50);
-    context.lineTo(150, 80);
-    context.stroke();
-    context.closePath();
+    this.controller.setupWidget("showTrails", 
+				{type: Mojo.Widget.defaultButton}, 
+				{buttonLabel: "Show Trails"});
+    Mojo.Event.listen(this.controller.get("showTrails"), Mojo.Event.tap,
+		      function (event) { asst.map.showTrails() });
+
+    Mojo.Log.info("gesters", "go");
+    var d = this.controller.stageController.document;
+    this.controller.listen(d, "gesturestart", function (event) {
+	asst.map.pinchStart(event.centerX, event.centerY, event.scale);
+    });
+    this.controller.listen(d, "gesturechange", function (event) {
+	asst.map.pinchChange(event.centerX, event.centerY, event.scale);
+    });
+
 
 /*
     this.controller.serviceRequest('palm://com.palm.power/timeout', {
