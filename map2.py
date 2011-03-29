@@ -24,6 +24,7 @@ render = render_genshi('templates', auto_reload=True)
 urls = (r'/', 'index',
         r'/history', 'history',
         r'/update', 'update',
+        r'/trails', 'trails',
         r'/gmap', 'gmap',
         r'/drawMap.png', 'drawMapImg',
         r'/updateTrails', 'updateTrails',
@@ -160,7 +161,7 @@ class updateTrails(object):
         return '<div>ok</div>'
     GET = POST # webos is sending get for my $.post()
 
-def updateWebClients(movingUser=None):
+def getUpdateMsg(movingUser=None):
     trailPoints = {}
     old = (time.time() - 3*60*60) * 1000
     for user in mongo.distinct('user'):
@@ -183,9 +184,18 @@ def updateWebClients(movingUser=None):
     msg = jsonlib.dumps(dict(trailPoints=trailPoints,
                                               center=ctr,
                                               scale=8.3))
+    return msg
+
+class trails(object):
+    def GET(self):
+        # polling version of updateWebClients
+        web.header('content-type', 'application/json')
+        return getUpdateMsg()
+
+def updateWebClients(movingUser=None):
     stompConn = PublishClient('bang', 61614)
     stompConn.connect()
-    stompConn.send('view', msg)
+    stompConn.send('view', getUpdateMsg(movingUser))
 
 class history(object):
     def GET(self):
