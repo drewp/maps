@@ -522,7 +522,16 @@ function makeMap(id) {
 			function () { 
 			    dirtyCanvas();
 			});
-    }); 
+    }
+    function pollTrails() {
+	$.getJSON("https://bigasterisk.com/map/SECRET/trails", gotNewTrails);
+    }
+    if (useStomp) {
+	startStomp(gotNewTrails);
+    } else {
+	pollTrails();
+    }
+    
     return {
 	showPeople: function () {
 	    coords.viewAll(trails.currentPositions);
