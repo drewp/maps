@@ -39,7 +39,7 @@ function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
 	var r = findExtent(pts);
 	self.setCenter(Point((r.minX + r.maxX) / 2, (r.minY + r.maxY) / 2));
 	var diam = Math.max(r.maxX - r.minX, r.maxY - r.minY);
-	self.setScale(Math.pow(5/diam, 1/2) * .6);
+	self.setScale(Math.pow(5/diam, 1/2) * .6); // way wrong
     }
 
     self.center = initialCenter;
@@ -61,7 +61,7 @@ function dot(ctx, pt, r, width, fill, stroke) {
 
 function findExtent(placeLocs) {
     var worldExtent = {};
-    $.each(placeLocs, function (i, place) {
+    jQuery.each(placeLocs, function (i, place) {
 	if (place.longitude) {
 	    place = ['', [place.latitude, place.longitude]]; // sic
 	}
@@ -106,7 +106,7 @@ function Grid(coords) {
 
 function Places(coords, places) {
     placeCenters = new RTree(); // place center points -> place obj
-    $.each(places, function (i, pl) {
+    jQuery.each(places, function (i, pl) {
 	var box = {x: pl[1][1], y: pl[1][0], w: .0001, h:.0001};
 
 	placeCenters.insert(box, {label: pl[0], order: i, worldPoint: Point(pl[1][1], pl[1][0])});
@@ -129,7 +129,7 @@ function Places(coords, places) {
 	var box;
 	var found = false;
 	var foundDist = 0;
-	$.each([0, 2, -2, 4, -4], function (dist, ypush) {
+	jQuery.each([0, 2, -2, 4, -4], function (dist, ypush) {
 	    if (found) { 
 		return;
 	    }
@@ -154,7 +154,7 @@ function Places(coords, places) {
 
 	visiblePlaces.sort(function (a,b) { return a.order - b.order });
 
-	$.each(visiblePlaces, function(i, place) {	
+	jQuery.each(visiblePlaces, function(i, place) {	
 	    var cp = coords.toCanvas(place.worldPoint);
 
 	    var name = place.label;
@@ -239,6 +239,16 @@ function Trails(coords, trailPoints) {
 	return cvs;
     }
 
+    function quadraticCurveToViaBez(ctx, currentX, currentY, cpx, cpy, x, y) {
+	// from https://developer.mozilla.org/en/Canvas_tutorial/Drawing_shapes
+	var cp1x = currentX + 2.0/3.0*(cpx - currentX);
+	var cp1y = currentY + 2.0/3.0*(cpy - currentY);
+	var cp2x = cp1x + (x - currentX)/3.0;
+	var cp2y = cp1y + (y - currentY)/3.0;
+
+	ctx.bezierCurveTo( cp1x, cp1y, cp2x, cp2y, x, y );
+    }
+
     function drawCurve(ctx, canvasPoints, cvs) {
 	// adapted from
 	// http://scaledinnovation.com/analytics/splines/splines.html
@@ -247,7 +257,9 @@ function Trails(coords, trailPoints) {
 	var n = canvasPoints.length;
 	ctx.beginPath();
         ctx.moveTo(canvasPoints[0].x,canvasPoints[0].y);
-        ctx.quadraticCurveTo(cvs[0],cvs[1], canvasPoints[1].x,canvasPoints[1].y);
+        quadraticCurveToViaBez(ctx, canvasPoints[0].x,canvasPoints[0].y,
+			       cvs[0],cvs[1], 
+			       canvasPoints[1].x,canvasPoints[1].y);
         ctx.stroke();
         ctx.closePath();
 
@@ -264,8 +276,10 @@ function Trails(coords, trailPoints) {
 
 	ctx.beginPath();
         ctx.moveTo(canvasPoints[n-1].x, canvasPoints[n-1].y);
-        ctx.quadraticCurveTo(cvs[2*n*2-10], cvs[2*n*2-9],
-			     canvasPoints[n-2].x, canvasPoints[n-2].y);
+        quadraticCurveToViaBez(ctx, 
+			       canvasPoints[n-1].x, canvasPoints[n-1].y,
+			       cvs[2*n*2-10], cvs[2*n*2-9],
+			       canvasPoints[n-2].x, canvasPoints[n-2].y);
         ctx.stroke();
         ctx.closePath();
     }
@@ -275,7 +289,7 @@ function Trails(coords, trailPoints) {
     this.draw = function(ctx, canvas) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
-	$.each(trailPoints, function (name, pts) {
+	jQuery.each(trailPoints, function (name, pts) {
 	    var initial = name.replace(/.*#(.).*/,"$1").toUpperCase();
 
 	    var settings = {
@@ -292,7 +306,7 @@ function Trails(coords, trailPoints) {
 	    var dotArgs = [];
 	    var canvasPoints = []; // Point objects
 
-	    $.each(pts, function (i, pt) {
+	    jQuery.each(pts, function (i, pt) {
 		var p = Point(pt.longitude, pt.latitude);
 		self.allVisiblePositions.push(pt);
 		var cp = coords.toCanvas(p);
@@ -304,7 +318,7 @@ function Trails(coords, trailPoints) {
 	    ctx.lineWidth=5;
 	    drawCurve(ctx, canvasPoints, makeCvs(canvasPoints));
 
-	    $.each(dotArgs, function (i, a) {
+	    jQuery.each(dotArgs, function (i, a) {
 		dot(ctx, a[0], a[1], a[2], a[3], a[4]);
 	    });
 
@@ -355,14 +369,19 @@ function centerPoint(coords, pt, redraw) {
 function startStomp(onMessage) {
     var stomp = new STOMPClient();
     stomp.onconnectedframe = function () {
+
 	stomp.subscribe('view');
-	$.post("updateTrails")
+	jQuery.post("updateTrails")
     };
     stomp.onmessageframe = function(frame) {
+
 	var data = JSON.parse(frame.body);
 	onMessage(data);
     };
+
+
     stomp.connect('localhost', 61614);
+    return stomp;
 }
 
 function getPosition(canvas, e) { // from inside gury.js, except I return Point
@@ -391,33 +410,35 @@ function zoomAbout(canvas, coords, factor, anchorCanvas) {
     coords.setCenter(coords.center.add(fix));
 }
 
-function makeMap(id) {
-    var worldExtent = findExtent(placeLoc);
+function setupBackgroundDrawing(g) {
+    /*
+      let everyone call dirtyCanvas when they've made a change, so we
+      can avoid slow draws piling up (especially on the phone version)
+    */
+    var drawScheduled = false;
+    function maybeDraw() {
+	if (drawScheduled) {
+	    g.draw();
+	    drawScheduled = false;
+	}
+    }
+    function dirtyCanvas() {
+	drawScheduled = true;
+	setTimeout(maybeDraw, 1);
+    }
+    return dirtyCanvas;
+}
 
-    var coords = new Coords($("#mapArea").width(), $("#mapArea").height(), 
-			    worldExtent,
-			    Point(-122.346, 37.547), 7.849);
-
-    var trailPoints = {};
-
-    g = $g(id);
-
-    var trails = new Trails(coords, trailPoints);
-
-    g.size(coords.canMaxX, coords.canMaxY)
-	.add(new Grid(coords))
-	.add('places', new Places(coords, placeLoc)) // should be getting these from server
-	.add(trails)
-	.draw();
-
+function setupDragZoom(g, coords, dirtyCanvas, useScaleSlider) {
     var dragStartWorld;
     function onMove(e) {
 	var pos = getPosition(g.canvas, e);
-	currentWorld = coords.toWorld(pos);
+	var currentWorld = coords.toWorld(pos);
 	coords.setCenter(coords.center.add(dragStartWorld.subtract(currentWorld)));
-	g.draw();
+	dirtyCanvas();
+	return false;
     }
-    $(g.canvas).mousedown(function (e) {
+    jQuery(g.canvas).mousedown(function (e) {
 	var pos = getPosition(g.canvas, e);
 	dragStartWorld = coords.toWorld(pos);
 	g.canvas.onmousemove = onMove;
@@ -428,41 +449,91 @@ function makeMap(id) {
     }).bind('mousewheel', function (event, delta) {
 	var mouseCanvas = getPosition(g.canvas, event);
 	zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
-	$("#scale").slider({value: coords.scale});
-	g.draw();
+	if (useScaleSlider) {
+	    jQuery("#scale").slider({value: coords.scale});
+	}
+	dirtyCanvas();
 	return false;
     });
+}
 
-    $("#scale").slider({min: .1, max: 30, step: .001});
-    $("#cx").slider({min: -122.5, max: -121.8, step: .001});
-    $("#cy").slider({min:37.2, max: 38.5, step: .001});
+function setupPinch(g, coords, dirtyCanvas) {
+    var scaleStart;
+    var dragStartWorld;
+    return {
+	pinchStart: function(x, y, scale) {
+	    // i bet they're passing me screen x/y, so this is only right if the page scroll offsets are 0
+	    var pos = getPosition(g.canvas, {pageX: x, pageY: y});
+	    dragStartWorld = coords.toWorld(pos);
+	    scaleStart = coords.scale;
+	},
+	pinchChange: function(x, y, scale) {
+	    var pos = getPosition(g.canvas, {pageX: x, pageY: y});
+	    var currentWorld = coords.toWorld(pos);
+	    coords.setCenter(coords.center.add(dragStartWorld.subtract(currentWorld)));
+	    coords.setScale(scaleStart * scale);
+	    dirtyCanvas();
+	}
+    }   
+}
 
+function makeMap(id) {
+    var $ = jQuery;
+    var useScaleSlider = !window.Mojo;
+    var useStomp = !window.Mojo;
+    var worldExtent = findExtent(placeLoc);
 
-    $("#scale").slider({value: coords.scale});
-    $("#scale").slider({slide: function (ev, ui) {
-	coords.setScale(ui.value);
-	$("#paramDisplay").text(JSON.stringify(coords));
-	g.draw();
-	return true;
-    }});
+    var coords = new Coords($("#"+id).width(), $("#"+id).height(), 
+			    worldExtent,
+			    Point(-122.346, 37.547), 7.849);
 
-    startStomp(function (data) {
+    var trailPoints = {};
+
+    g = $g(id);
+    var dirtyCanvas = setupBackgroundDrawing(g);
+
+    var trails = new Trails(coords, trailPoints);
+    g.size(coords.canMaxX, coords.canMaxY)
+	.add(new Grid(coords))
+    	.add('places', new Places(coords, placeLoc)) // should be getting these from server
+	.add(trails);
+    dirtyCanvas();
+
+    setupDragZoom(g, coords, dirtyCanvas, useScaleSlider);
+    var pinch = setupPinch(g, coords, dirtyCanvas);
+
+    if (useScaleSlider) {
+	$("#scale").slider({
+	    min: .1, max: 30, step: .001, 
+	    value: coords.scale, 
+	    slide: function (ev, ui) {
+		coords.setScale(ui.value);
+		$("#paramDisplay").text(JSON.stringify(coords));
+		dirtyCanvas();
+		return true;
+	    }});
+    }
+
+    function gotNewTrails(data) {
 	$.extend(trailPoints, data.trailPoints);
 
 	coords.setScale(data.scale);
 	new centerPoint(coords, Point(data.center.longitude, data.center.latitude),
 			function () { 
-			    g.draw();
+			    dirtyCanvas();
 			});
     }); 
     return {
 	showPeople: function () {
 	    coords.viewAll(trails.currentPositions);
-	    g.draw();
+	    dirtyCanvas();
 	},
 	showTrails: function () {
 	    coords.viewAll(trails.allVisiblePositions);
-	    g.draw();
-	}
+	    dirtyCanvas();
+	},
+	pollTrails: pollTrails,
+	pinchStart: pinch.pinchStart,
+	pinchChange: pinch.pinchChange
     }
 }
