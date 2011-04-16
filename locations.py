@@ -13,7 +13,6 @@ def readGoogleMapsLocations():
     return locs
 
 def loadFromGoogle():
-    ret = []
     url = open("priv-googlemaps.url").read().strip()
     t1 = time.time()
     try:
@@ -27,8 +26,37 @@ def loadFromGoogle():
     log.info("load google map data in %s sec" % (time.time() - t1))
     
     root = etree.fromstring(feed.encode('utf8'))
+
+    #return parseGeoRss(root)
+    return parseKml(root)
+    
+
+def parseKml(root):
+    '''
+        <kml xmlns="http://earth.google.com/kml/2.2">
+        <Document>
+          <Placemark>
+            <name>home</name>
+            <styleUrl>#style135</styleUrl>
+            <Point>
+              <coordinates>-122.2,37.5,0.000000</coordinates>
+            </Point>
+          </Placemark>
+    '''
+    KML = "http://earth.google.com/kml/2.2"
+    ret = []
+    for item in root.xpath("/k:kml/k:Document/k:Placemark", namespaces={"k":KML}):
+        title = item.find("{%s}name" % KML).text
+        coords = item.find("{%s}Point" % KML).find("{%s}coordinates" % KML).text
+        print coords
+        lng,lat,_ = map(float, coords.split(","))
+        ret.append((title, (lat, lng)))
+    return ret
+    
+def parseGeoRss(root):
+    ret = []
     for item in root.xpath("/rss/channel/item"):
-        '''     
+        '''
           <item>
             <guid isPermaLink="false">00047df9356ac91212e8d</guid>
             <pubDate>Mon, 25 Jan 2010 08:46:43 +0000</pubDate>
