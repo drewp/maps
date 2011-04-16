@@ -34,7 +34,9 @@ function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
     this.toCanvas = function (worldPoint) {
 	return self._world2canvas.transformPoint(worldPoint);
     }
-
+    this.toWorldX = function (cx) {
+	return self.toWorld(Point(cx, 0)).x;
+    }
     this.viewAll = function (pts) {
 	var r = findExtent(pts);
 	self.setCenter(Point((r.minX + r.maxX) / 2, (r.minY + r.maxY) / 2));
@@ -83,17 +85,33 @@ function findExtent(placeLocs) {
 
 function Grid(coords) {
     this.draw = function (ctx, canvas) {
+
+	var worldSpacing = .02; /*deg*/
 	ctx.strokeStyle = "#aaa";
+
+	var count = (coords.toWorldX(coords.canMaxX) - coords.toWorldX(coords.canMinX)) / worldSpacing;
+	var canvasSpacing = (coords.canMaxX - coords.canMinX) / count;
+	if (canvasSpacing < 1.5) {
+	    worldSpacing *= 100;
+	    ctx.strokeStyle = "#a5a";
+	} else if(canvasSpacing < 2.5) {
+	    worldSpacing *= 50;
+	    ctx.strokeStyle = "#aa5";
+	} else if(canvasSpacing < 10) {
+	    worldSpacing *= 5;
+	    ctx.strokeStyle = "#5aa";
+	}
+
 	ctx.lineWidth=.2;
 	ctx.beginPath();
-	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += .02 /*deg*/) {
+	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += worldSpacing /*deg*/) {
 	    var cx = coords.toCanvas(Point(wx, 0)).x;
 	    if (cx > 0 && cx < coords.canMaxX) {
 		ctx.moveTo(cx, coords.canMinY);
 		ctx.lineTo(cx, coords.canMaxY);
 	    }
 	}
-	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += .01 /*deg*/) {
+	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += worldSpacing / 2 /*deg*/) {
 	    var cy = coords.toCanvas(Point(0, wy)).y;
 	    if (cy > 0 && cy < coords.canMaxY) {
 		ctx.moveTo(coords.canMinX, cy);
@@ -283,9 +301,11 @@ function Trails(coords, trailPoints) {
         ctx.stroke();
         ctx.closePath();
     }
+ 
     var self = this;
     self.currentPositions = [];
     self.allVisiblePositions = [];
+
     this.draw = function(ctx, canvas) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
@@ -508,7 +528,7 @@ function makeMap(id) {
 	    value: coords.scale, 
 	    slide: function (ev, ui) {
 		coords.setScale(ui.value);
-		$("#paramDisplay").text(JSON.stringify(coords));
+		    //$("#paramDisplay").text(JSON.stringify(coords));
 		dirtyCanvas();
 		return true;
 	    }});
