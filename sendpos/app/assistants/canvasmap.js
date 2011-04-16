@@ -233,7 +233,7 @@ function Trails(coords, trailPoints) {
 	var d01=Math.sqrt(Math.pow(x1-x0,2)+Math.pow(y1-y0,2));
 	var d12=Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2));
 	
-	var fa=t*d01/(d01+d12);
+	var fa=(d01+d12) ? t*d01/(d01+d12) : 0;
 	var fb=t-fa;
 	
 	var p1x=x1+fa*(x0-x2);
