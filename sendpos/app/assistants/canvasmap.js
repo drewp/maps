@@ -66,6 +66,8 @@ function findExtent(placeLocs) {
     jQuery.each(placeLocs, function (i, place) {
 	if (place.longitude) {
 	    place = ['', [place.latitude, place.longitude]]; // sic
+	} else if (place.x) {
+	    place = ['', [place.y, place.x]];
 	}
 	if (worldExtent.minX == undefined || place[1][1] < worldExtent.minX) {
 	    worldExtent.minX = place[1][1];
@@ -122,7 +124,25 @@ function Grid(coords) {
     };
 }
 
-function Places(coords, places) {
+function RadialGrid(center, coords) {
+    this.draw = function (ctx, canvas) {
+	ctx.lineWidth = 2;
+
+	for (var ring=0; ring<10; ring++) {
+	    var worldSpacing=.02 * (ring+1); /*deg longitude*/
+	    var opacity = 1 - ring/(10+1);
+	    ctx.strokeStyle = "rgba(47,110,56,"+Math.pow(opacity, 2)+")";
+	    ctx.beginPath();
+	    var c = coords.toCanvas(center);
+	    var r = coords.toCanvas({x: center.x + worldSpacing, y: center.y});
+	    ctx.arc(c.x, c.y, r.x - c.x, 0, Math.PI*2, true);
+	    ctx.closePath();
+	    ctx.stroke();
+	}
+    };
+}
+
+function Places(opts, coords, places) {
     placeCenters = new RTree(); // place center points -> place obj
     jQuery.each(places, function (i, pl) {
 	var box = {x: pl[1][1], y: pl[1][0], w: .0001, h:.0001};
@@ -181,14 +201,14 @@ function Places(coords, places) {
 	    dot(ctx, cp, 2, .4, 'black', 'white');
 
 	    // might look good for the labels closest to people were drawn bigger
-	    var fontSize = 10;
+	    var fontSize = opts.placeFontSize;
 
 	    var box = selectPosition(placeLabels, cp, width, fontSize);
 	    if (!box) {
 		return;
 	    }
 	    
-	    ctx.fillStyle = "rgba(0,0,0,"+(.7 - box.foundDist / 8)+")";
+	    ctx.fillStyle = "rgba("+opts.placeColorRgb+","+(.7 - box.foundDist / 8)+")";
 
 	    ctx.font = ""+fontSize+"px sans-serif";
 	    ctx.textAlign = "left";
@@ -366,7 +386,7 @@ window.requestAnimFrame = (function(){
         };
 })();
 
-function centerPoint(coords, pt, redraw) {
+function centerPointSlide(coords, pt, redraw) {
     var startTime = 1 * new Date();
     var endTime = startTime + 2000;
     var centerStart = coords.center;
@@ -497,15 +517,27 @@ function setupPinch(g, coords, dirtyCanvas) {
     }   
 }
 
-function makeMap(id) {
+function makeMap(id, placeLoc, _opts) {
     var $ = jQuery;
-    var useScaleSlider = !window.Mojo;
-    var useStomp = !window.Mojo;
+    var opts = {
+	useScaleSlider: !window.Mojo,
+	useStomp: !window.Mojo,
+	startCenter: Point(-122.346, 37.547),
+	startZoom: 7.849,
+	motion: "auto",
+	grid: true,
+	radialGrid: false,
+	placeFontSize: 10,
+	placeColorRgb: "0,0,0",
+	trailUri: "https://bigasterisk.com/map/SECRET/trails"
+    };
+    $.extend(opts, _opts || {});
+
     var worldExtent = findExtent(placeLoc);
 
     var coords = new Coords($("#"+id).width(), $("#"+id).height(), 
 			    worldExtent,
-			    Point(-122.346, 37.547), 7.849);
+			    opts.startCenter, opts.startZoom);
 
     var trailPoints = {};
 
@@ -513,16 +545,21 @@ function makeMap(id) {
     var dirtyCanvas = setupBackgroundDrawing(g);
 
     var trails = new Trails(coords, trailPoints);
-    g.size(coords.canMaxX, coords.canMaxY)
-	.add(new Grid(coords))
-    	.add('places', new Places(coords, placeLoc)) // should be getting these from server
-	.add(trails);
+    g.size(coords.canMaxX, coords.canMaxY);
+    if (opts.grid) {
+	g.add(new Grid(coords));
+    }
+    if (opts.radialGrid) {
+	g.add(new RadialGrid(opts.startCenter, coords));
+    }
+    g.add('places', new Places(opts, coords, placeLoc));
+    g.add(trails);
     dirtyCanvas();
 
-    setupDragZoom(g, coords, dirtyCanvas, useScaleSlider);
+    setupDragZoom(g, coords, dirtyCanvas, opts.useScaleSlider);
     var pinch = setupPinch(g, coords, dirtyCanvas);
 
-    if (useScaleSlider) {
+    if (opts.useScaleSlider) {
 	$("#scale").slider({
 	    min: .1, max: 30, step: .001, 
 	    value: coords.scale, 
@@ -537,16 +574,28 @@ function makeMap(id) {
     function gotNewTrails(data) {
 	$.extend(trailPoints, data.trailPoints);
 
-	coords.setScale(data.scale);
-	new centerPoint(coords, Point(data.center.longitude, data.center.latitude),
-			function () { 
-			    dirtyCanvas();
-			});
+	if (opts.motion == "auto") {
+	    coords.setScale(data.scale);
+	    new centerPointSlide(coords, Point(data.center.longitude, data.center.latitude),
+				 function () { 
+				     dirtyCanvas();
+				 });
+	} else if (opts.motion == "home") {
+	    // always keep startCenter visibile
+	    var allPts = [opts.startCenter];
+	    $.each(data.trailPoints, function (u, pts) {
+		$.each(pts, function (i, p) {
+		    allPts.push(p);
+		});
+	    });
+	    coords.viewAll(allPts);
+	    dirtyCanvas();
+	}
     }
     function pollTrails() {
-	$.getJSON("https://bigasterisk.com/map/SECRET/trails", gotNewTrails);
+	$.getJSON(opts.trailUri, gotNewTrails);
     }
-    if (useStomp) {
+    if (opts.useStomp) {
 	startStomp(gotNewTrails);
     } else {
 	pollTrails();
