@@ -34,6 +34,12 @@ function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
     this.toCanvas = function (worldPoint) {
 	return self._world2canvas.transformPoint(worldPoint);
     }
+    this.toCanvasFast = function (worldPoint) {
+	// doesn't return a full Point, just an obj with x and y
+	var m = self._world2canvas;
+	return {x: m.a*worldPoint.x + m.c*worldPoint.y + m.tx,
+		y: m.b*worldPoint.x + m.d*worldPoint.y + m.ty};
+    }
     this.toWorldX = function (cx) {
 	return self.toWorld(Point(cx, 0)).x;
     }
@@ -184,6 +190,17 @@ function Places(opts, coords, places) {
 	return box;
     }
 
+    function drawLabel(ctx, opts, box, name) {
+	ctx.fillStyle = "rgba("+opts.placeColorRgb+","+(.7 - box.foundDist / 8)+")";
+
+	// might look good for the labels closest to people were drawn bigger
+	ctx.font = ""+opts.placeFontSize+"px sans-serif";
+	ctx.textAlign = "left";
+	ctx.textBaseline = "alphabetic";
+
+	ctx.fillText(name, box.x, box.y);
+    }
+
     this.draw = function (ctx, canvas) {
 
 	var visiblePlaces = searchVisiblePlaces(coords);
@@ -192,32 +209,23 @@ function Places(opts, coords, places) {
 
 	visiblePlaces.sort(function (a,b) { return a.order - b.order });
 
+	// this is a bottleneck, and maybe could be split into web workers
 	jQuery.each(visiblePlaces, function(i, place) {	
-	    var cp = coords.toCanvas(place.worldPoint);
+	    var cp = coords.toCanvasFast(place.worldPoint);
 
 	    var name = place.label;
 	    var width = ctx.measureText(name).width;
 	    
 	    dot(ctx, cp, 2, .4, 'black', 'white');
 
-	    // might look good for the labels closest to people were drawn bigger
-	    var fontSize = opts.placeFontSize;
-
-	    var box = selectPosition(placeLabels, cp, width, fontSize);
+	    var box = selectPosition(placeLabels, cp, width, opts.placeFontSize);
 	    if (!box) {
 		return;
 	    }
-	    
-	    ctx.fillStyle = "rgba("+opts.placeColorRgb+","+(.7 - box.foundDist / 8)+")";
-
-	    ctx.font = ""+fontSize+"px sans-serif";
-	    ctx.textAlign = "left";
-	    ctx.textBaseline = "alphabetic";
-
-	    ctx.fillText(name, box.x, box.y);
-
+	    drawLabel(ctx, opts, box, name);
 	    placeLabels.insert(box, place);
 	});
+
     }
 }
 
