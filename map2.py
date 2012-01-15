@@ -134,10 +134,9 @@ class update(object):
         if not d.get('user', '').strip():
             raise ValueError("need user")
         
-        f = open("updates.log", "a")
-        f.write(inJson+"\n")
-        f.close()
-
+        return self.finish(d)
+    
+    def finish(self, d):
         mongo.insert(d, safe=True)
         updateWebClients(d['user'])
         return self.sendSms(d)
@@ -220,12 +219,7 @@ class history(object):
     def GET(self):
         web.header('Content-type', 'application/xhtml+xml; charset=UTF-8')
 
-        
-        f = open("updates.log")
-        rows = []
-        for line in f:
-            rows.append(jsonlib.read(line, use_float=True))
-        rows.reverse()
+        rows = mongo.find().sort([("timestamp", -1)]).limit(50)
 
         def closest(row):
             return describeLocation(row['longitude'], row['latitude'], row['horizAccuracy'])
