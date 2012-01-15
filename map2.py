@@ -97,6 +97,26 @@ class places(object):
 timeOfLastSms = {} # todo: compute this from the db instead
 
 class update(object):
+
+    def GET(self):
+        """SendPosition for iphone won't use POST"""
+        i = web.input()
+
+        user = config['sendPositionDeviceMap'][i['deviceid']]
+
+        d = { "source" : "SendPosition",
+              "user" : user,
+              "timestamp" : long(time.time() * 1000),
+              "horizAccuracy" : float(i['hacc']),
+              "altitude" : float(i['altitude']),
+              "longitude" : float(i['lon']),
+              "latitude" : float(i['lat']),
+              "velocity" : float(i['speed']),
+              "vertAccuracy" : float(i['vacc']),
+              "heading" : float(i['heading'])
+              }
+        return self.finish(d)
+    
     def POST(self):
 
         # {u'horizAccuracy': 1616L, u'timestamp': Decimal('1251629916354'),
