@@ -48,7 +48,6 @@ def parseKml(root):
     for item in root.xpath("/k:kml/k:Document/k:Placemark", namespaces={"k":KML}):
         title = item.find("{%s}name" % KML).text
         coords = item.find("{%s}Point" % KML).find("{%s}coordinates" % KML).text
-        print coords
         lng,lat,_ = map(float, coords.split(","))
         ret.append((title, (lat, lng)))
     return ret

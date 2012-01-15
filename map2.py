@@ -19,6 +19,8 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger()
 milesPerMeter = 0.000621371192237334
 
+config = json.loads(open("priv.json").read())
+
 render = render_genshi('templates', auto_reload=True)
 
 urls = (r'/', 'index',
@@ -32,7 +34,8 @@ urls = (r'/', 'index',
         )
 
 app = web.application(urls, globals())
-mongo = Connection('bang', 27017)['map']['map']
+m = config['mongo']
+mongo = Connection(m['host'], m['port'])[m['db']][m['collection']]
 makeTime = lambda milli: datetime.datetime.fromtimestamp(milli/1000, tzlocal()).isoformat()
 
 def lastUpdates():
@@ -116,9 +119,7 @@ class update(object):
         f.close()
 
         mongo.insert(d, safe=True)
-
         updateWebClients(d['user'])
-
         return self.sendSms(d)
 
     def sendSms(self, d):
@@ -127,10 +128,7 @@ class update(object):
 
         c3po = restkit.Resource('http://bang:9040/')
 
-        tellUsers = set([
-            'http://bigasterisk.com/foaf.rdf#drewp',
-            'http://bigasterisk.com/kelsi/foaf.rdf#kelsi',
-            ])
+        tellUsers = set(config['tellUsers'])
         
         #tellUsers.discard(d['user'])
 
@@ -144,7 +142,8 @@ class update(object):
                 
             c3po.post(path='', payload={
                 'user' : u,
-                'msg' : '%s position is %s http://bigast.com/map' % (foafName(d['user']), name),
+                'msg' : '%s position is %s %s' % (
+                    foafName(d['user']), name, config['smsUrl']),
                 'mode' : 'sms'
             },
                       headers={'content-type' :
@@ -193,7 +192,7 @@ class trails(object):
         return getUpdateMsg()
 
 def updateWebClients(movingUser=None):
-    stompConn = PublishClient('bang', 61614)
+    stompConn = PublishClient(config['stomp']['host'], config['stomp']['port'])
     stompConn.connect()
     stompConn.send('view', getUpdateMsg(movingUser))
 
@@ -272,9 +271,7 @@ def foafName(uri):
     # todo
     if not uri:
         return ''
-    return {'http://bigasterisk.com/foaf.rdf#drewp' : 'Drew',
-            'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Kelsi',
-            }.get(uri, uri)
+    return config['foafNames'].get(uri, uri)
 
 def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')
@@ -297,6 +294,6 @@ def placeName(long, lat):
         
     
 if __name__ == '__main__':
-    sys.argv.append("9033")
+    sys.argv.append(str(config['port']))
     app.run()
 
