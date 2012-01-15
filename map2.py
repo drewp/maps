@@ -43,6 +43,7 @@ def lastUpdates():
     log.debug("distinct users")
     allUsers = set(mongo.distinct('user'))
     allUsers.discard("?")
+    allUsers.discard(None)
     updates = {}
     log.debug("first timestamps")
     for u in allUsers:
@@ -183,7 +184,7 @@ def getUpdateMsg(movingUser=None):
     trailPoints = {}
     old = (time.time() - 3*60*60) * 1000
     for user in mongo.distinct('user'):
-        if user == '?':
+        if user in ['?', None]:
             continue
         recent = list(mongo.find({'user':user}, sort=[('timestamp', -1)], limit=50))
         recent.reverse()
@@ -199,9 +200,14 @@ def getUpdateMsg(movingUser=None):
         ctrs = [pts[-1] for pts in trailPoints.values()]
         ctr = {'longitude' : sum(c['longitude'] for c in ctrs)/len(ctrs),
                'latitude' : sum(c['latitude'] for c in ctrs)/len(ctrs)}
-    msg = jsonlib.dumps(dict(trailPoints=trailPoints,
-                                              center=ctr,
-                                              scale=8.3))
+    try:
+        msg = jsonlib.dumps(dict(trailPoints=trailPoints,
+                                 center=ctr,
+                                 scale=8.3))
+    except Exception:
+        log.error("trailPoints=%r", trailPoints)
+        raise
+    
     return msg
 
 class trails(object):
