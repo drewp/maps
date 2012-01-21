@@ -338,7 +338,7 @@ function Trails(coords, trailPoints) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
 	jQuery.each(trailPoints, function (name, pts) {
-	    var initial = name.replace(/.*#(.).*/,"$1").toUpperCase();
+	    var initial = name.replace(/.*[#/](.).*/,"$1").toUpperCase();
 
 	    var settings = {
 		K: {
@@ -348,6 +348,10 @@ function Trails(coords, trailPoints) {
 		D: {
 		    trailStroke: "rgba(0,200,0,.2)",
 		    dotFill: 'lightgreen'
+		},
+                J: {
+		    trailStroke: "rgba(255,0,0,.6)",
+		    dotFill: 'red'
 		}
 	    }[initial]
 
