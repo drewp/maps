@@ -149,27 +149,27 @@ class update(object):
         c3po = restkit.Resource('http://bang:9040/')
 
         tellUsers = set(config['tellUsers'])
-        
-        #tellUsers.discard(d['user'])
+        if d['user'] in tellUsers:
+            #tellUsers.discard(d['user'])
 
-        now = time.time()
-        for u in tellUsers:
-            
-            if u in timeOfLastSms:
-                if now < timeOfLastSms[u] + 4.9*60:
-                    continue
-            timeOfLastSms[u] = now
-                
-            c3po.post(path='', payload={
-                'user' : u,
-                'msg' : '%s position is %s %s' % (
-                    foafName(d['user']), name, config['smsUrl']),
-                'mode' : 'sms'
-            },
-                      headers={'content-type' :
-                               'application/x-www-form-urlencoded'}
-                  )
-            # "eta home in 15 mins"
+            now = time.time()
+            for u in tellUsers:
+
+                if u in timeOfLastSms:
+                    if now < timeOfLastSms[u] + 4.9*60:
+                        continue
+                timeOfLastSms[u] = now
+
+                c3po.post(path='', payload={
+                    'user' : u,
+                    'msg' : '%s position is %s %s' % (
+                        foafName(d['user']), name, config['smsUrl']),
+                    'mode' : 'sms'
+                },
+                          headers={'content-type' :
+                                   'application/x-www-form-urlencoded'}
+                      )
+                # "eta home in 15 mins"
 
         return jsonlib.dumps({'posName' : name})
 
