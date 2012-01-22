@@ -56,7 +56,7 @@ io.sockets.on('connection', function (socket) {
 
 app.get("/", function (req, res) { 
     res.header("content-type", "application/xhtml+xml");
-    superagent.get("http://localhost:9036/places", function (mapIds) {
+    superagent.get("http://localhost:9084/places", function (mapIds) {
         var j = 0;
         mapIds = mapIds.body.mapIds.map(function (id) { j++; return {id: id, row: j} });
         var ctx = {
