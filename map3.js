@@ -13,9 +13,9 @@ Mu.templateRoot = './templates/';
 var proxy = new httpProxy.RoutingProxy();
 
 var app = express.createServer();
-app.listen(9034);
+app.listen(9085);
 
-console.log('users come to http://localhost:9034/');
+console.log('users come to http://localhost:9085/');
 
 var am = assetManager({
     'js' : {
@@ -77,7 +77,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/places", function (req, res) {
-    proxy.proxyRequest(req, res, {host: 'localhost', port: 9036});
+    proxy.proxyRequest(req, res, {host: 'localhost', port: 9084});
 });
 
 app.get("/history", function (req, res) {
@@ -95,9 +95,9 @@ app.get("/static/(bundle.js)", express.static(__dirname));
 app.get("/images/*", express.static(__dirname + "/static/jquery-ui-1.8.17.custom/css/smoothness"));
 
 var internal = express.createServer();
-internal.listen(9037);
+internal.listen(9086);
 internal.use(express.bodyParser());
-console.log('internal connections to http://localhost:9037/');
+console.log('internal connections to http://localhost:9086/');
 
 internal.post("/gotNewTrails", function (req, res) {
     io.sockets.in("mapUpdate").emit("gotNewTrails", req.body);
