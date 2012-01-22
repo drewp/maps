@@ -10,7 +10,8 @@ node
   /places ? map=perttula  -> places.py
 
 launch:
- ./places.py 9036
+ ./map2.py
+ ./places.py 9084
 NODE_ENV=production ./maps3.js
 
 autoreload test mode:

@@ -43,7 +43,7 @@ font-size: 11px;
     font-weight: bold;
     padding: 3px;
   }
-  .personRow > .on  {float:left; width: 46px;}
+  .personRow > .on  {float:left; width: 65px;}
 .personRow > .showing  {}
 .personRow > .follow  {float:left; width: 70px;}
 .personRow > .xlastSeen:after {
@@ -85,13 +85,15 @@ table td {
           <div class="controls">
             <div class="section">
               <h2>People</h2>
-              <div py:for="u in updates" class="personRow">
-              <div class="user">${foafName(u['user'])} </div>
-              <div class="on"><input type="checkbox" checked="checked"/> On</div>
-              <div class="follow"><input type="checkbox"/> Follow</div>
-              <div class="showing">Showing <input type="text" value="last 3 hours | last 20 points | last trip" size="10"/></div>
-              <div class="lastSeen">Last seen 3 min ago (at 15:31)${str(makeTime(u['timestamp']))*0}, velocity ${u['velocity']}, altitude ${u.altitude} </div>
+              {{#updates}}
+              <div class="personRow">
+                <div class="user">{{label}} </div>
+                <div class="on"><input type="checkbox" checked="checked"/> Visible</div>
+                <div class="follow"><input type="checkbox"/> Follow</div>
+                <div class="showing">Showing <input type="text" value="last 3 hours | last 20 points | last trip" size="10"/></div>
+                <div class="lastSeen">Last seen {{lastSeen}}{{#recent}}, velocity {{velocity}}, altitude {{altitude}} {{/recent}}</div>
               </div>
+              {{/updates}}
             </div>
             <div class="section">
               <h2>Map</h2>
