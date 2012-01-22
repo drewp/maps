@@ -1,19 +1,33 @@
-import time, restkit, logging, socket
+import time, restkit, logging, socket, json
 log = logging.getLogger()
 
 from lxml import etree
-_recent = None
-def readGoogleMapsLocations():
-    global _recent
+_recent = {}
+def readGoogleMapsLocations(id, forceReload=False):
     now = time.time()
-    if _recent is not None and _recent[0] > now - 10*60:
-        return _recent[1]
-    locs = loadFromGoogle()
-    _recent = (now, locs)
+    if (_recent.get(id) is not None and
+        _recent[id][0] > now - 10*60 and
+        not forceReload):
+        return _recent[id][1]
+    locs = loadFromGoogle(id)
+    _recent[id] = (now, locs)
     return locs
 
-def loadFromGoogle():
-    url = open("priv-googlemaps.url").read().strip()
+def loadMappings():
+    return json.loads(open("priv.json").read())['googleMaps']
+    
+
+def listMapIds():
+    mappings = loadMappings()
+    return [m['id'] for m in mappings]
+
+def loadFromGoogle(id):
+    mappings = loadMappings()
+    matches = [m['msid'] for m in mappings if m['id'] == id]
+    if len(matches) != 1:
+        raise ValueError("config had %s matches for id %s" % (len(matches), id))
+    cookie = matches[0]
+    url = "http://maps.google.com/maps/ms?ie=UTF8&hl=en&vps=1&jsv=200b&msa=0&output=kml&msid=%s" % cookie
     t1 = time.time()
     try:
         feed = restkit.Resource(url).get().body_string()

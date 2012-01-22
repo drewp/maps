@@ -94,7 +94,7 @@ function findExtent(placeLocs) {
 function Grid(coords) {
     this.draw = function (ctx, canvas) {
 
-	var worldSpacing = .02; /*deg*/
+	var worldSpacing = 1/60/60; /*deg. 1/60 of deg latitude is a nautical mile*/
 	ctx.strokeStyle = "#aaa";
 
 	var count = (coords.toWorldX(coords.canMaxX) - coords.toWorldX(coords.canMinX)) / worldSpacing;
@@ -119,7 +119,7 @@ function Grid(coords) {
 		ctx.lineTo(cx, coords.canMaxY);
 	    }
 	}
-	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += worldSpacing / 2 /*deg*/) {
+	for (var wy = coords.worldExtent.minY; wy < coords.worldExtent.maxY; wy += worldSpacing /*deg*/) {
 	    var cy = coords.toCanvas(Point(0, wy)).y;
 	    if (cy > 0 && cy < coords.canMaxY) {
 		ctx.moveTo(coords.canMinX, cy);
@@ -148,13 +148,7 @@ function RadialGrid(center, coords) {
     };
 }
 
-function Places(opts, coords, places) {
-    placeCenters = new RTree(); // place center points -> place obj
-    jQuery.each(places, function (i, pl) {
-	var box = {x: pl[1][1], y: pl[1][0], w: .0001, h:.0001};
-
-	placeCenters.insert(box, {label: pl[0], order: i, worldPoint: Point(pl[1][1], pl[1][0])});
-    });
+function PlaceDraw(opts, coords, places) {
 
     function searchVisiblePlaces(coords) {
 	var wmin = coords.toWorld(
@@ -162,7 +156,7 @@ function Places(opts, coords, places) {
 		  coords.canMaxY));
 	var wmax = coords.toWorld(Point(coords.canMaxX, coords.canMinY));
 	var worldView = {x: wmin.x, y: wmin.y, w: wmax.x - wmin.x, h: wmax.y - wmin.y};
-	return placeCenters.search(worldView);
+	return places.search(worldView);
     }
 
     function selectPosition(placeLabels, cp, width, boxHeight) {
@@ -353,7 +347,10 @@ function Trails(coords, trailPoints) {
 		    trailStroke: "rgba(255,0,0,.6)",
 		    dotFill: 'red'
 		}
-	    }[initial]
+	    }[initial];
+            if (!settings) {
+                settings = {trailStroke: "rgba(200,200,200,1)", dotFill: "gray"};
+            }
 
 	    var dotArgs = [];
 	    var canvasPoints = []; // Point objects
@@ -529,7 +526,7 @@ function setupPinch(g, coords, dirtyCanvas) {
     }   
 }
 
-function makeMap(id, placeLoc, _opts) {
+function makeMap(id, _opts) {
     var $ = jQuery;
     var opts = {
 	useScaleSlider: !window.Mojo,
@@ -545,7 +542,7 @@ function makeMap(id, placeLoc, _opts) {
     };
     $.extend(opts, _opts || {});
 
-    var worldExtent = findExtent(placeLoc);
+    var worldExtent = findExtent([]);
 
     var coords = new Coords($("#"+id).width(), $("#"+id).height(), 
 			    worldExtent,
@@ -564,7 +561,11 @@ function makeMap(id, placeLoc, _opts) {
     if (opts.radialGrid) {
 	g.add(new RadialGrid(opts.startCenter, coords));
     }
-    g.add('places', new Places(opts, coords, placeLoc));
+
+    var places = new Places();
+    $(window).bind("locationsChanged", dirtyCanvas);
+
+    g.add('places', new PlaceDraw(opts, coords, places));
     g.add(trails);
     dirtyCanvas();
 
@@ -623,7 +624,9 @@ function makeMap(id, placeLoc, _opts) {
 	    dirtyCanvas();
 	},
 	pollTrails: pollTrails,
+        gotNewTrails: gotNewTrails,
 	pinchStart: pinch.pinchStart,
-	pinchChange: pinch.pinchChange
+	pinchChange: pinch.pinchChange,
+        places: places
     }
 }

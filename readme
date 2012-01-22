@@ -1,0 +1,18 @@
+
+/locs/maps
+
+/positions ? user=uri & start=iso & end=iso
+
+
+
+node
+  /  -> self
+  /places ? map=perttula  -> places.py
+
+launch:
+ ./places.py 9036
+NODE_ENV=production ./maps3.js
+
+autoreload test mode:
+bin/node parts/node/bin/supervisor map3.js
+

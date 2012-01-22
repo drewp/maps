@@ -1,14 +1,8 @@
-#!/usr/bin/python
-"""
-sudo easy_install -U -Z http://webpy.org/static/web.py-0.32.tar.gz
-
-  
-"""
+#!bin/python
 from __future__ import division
 import sys, web, time, jsonlib, logging, datetime, os, json
 from xml.utils import iso8601
 from dateutil.tz import tzlocal
-from stompclient import PublishClient
 from web.contrib.template import render_genshi
 from pyproj import Geod # geopy can do distances too
 import restkit
@@ -30,7 +24,6 @@ urls = (r'/', 'index',
         r'/gmap', 'gmap',
         r'/drawMap.png', 'drawMapImg',
         r'/updateTrails', 'updateTrails',
-        r'/places\.js', 'places',
         )
 
 app = web.application(urls, globals())
@@ -89,12 +82,6 @@ class gmap(object):
             avgAttr=lambda recs, attr: (sum(r[attr] for r in recs) / len(recs)),
             )
 
-class places(object):
-    def GET(self):
-        web.header('content-type', 'application/json')
-        locs = readGoogleMapsLocations()
-        return "var placeLoc = %s;\n" % json.dumps(locs)
-
 timeOfLastSms = {} # todo: compute this from the db instead
 
 class update(object):
@@ -144,7 +131,9 @@ class update(object):
 
     def sendSms(self, d):
         name = describeLocation(d['longitude'], d['latitude'],
-                                d['horizAccuracy'])
+                                d['horizAccuracy'],
+                                d['user'] # this could be redone for each -recipient- user
+                                )
 
         c3po = restkit.Resource('http://bang:9040/')
 
@@ -201,9 +190,7 @@ def getUpdateMsg(movingUser=None):
         ctr = {'longitude' : sum(c['longitude'] for c in ctrs)/len(ctrs),
                'latitude' : sum(c['latitude'] for c in ctrs)/len(ctrs)}
     try:
-        msg = jsonlib.dumps(dict(trailPoints=trailPoints,
-                                 center=ctr,
-                                 scale=8.3))
+        msg = dict(trailPoints=trailPoints, center=ctr, scale=8.3)
     except Exception:
         log.error("trailPoints=%r", trailPoints)
         raise
@@ -214,12 +201,13 @@ class trails(object):
     def GET(self):
         # polling version of updateWebClients
         web.header('content-type', 'application/json')
-        return getUpdateMsg()
+        return json.dumps(getUpdateMsg())
 
+map3 = restkit.Resource(config['postUpdates'])
 def updateWebClients(movingUser=None):
-    stompConn = PublishClient(config['stomp']['host'], config['stomp']['port'])
-    stompConn.connect()
-    stompConn.send('view', getUpdateMsg(movingUser))
+    map3.post(path='',
+              payload=json.dumps(getUpdateMsg(movingUser)),
+              headers={"content-type": "application/json"})
 
 class history(object):
     def GET(self):
@@ -228,9 +216,9 @@ class history(object):
         rows = mongo.find().sort([("timestamp", -1)]).limit(50)
 
         def closest(row):
-            return describeLocation(row['longitude'], row['latitude'], row['horizAccuracy'])
+            return describeLocation(row['longitude'], row['latitude'], row['horizAccuracy'], row['user'])
             try:
-                name, meters = closestTarget(row['longitude'], row['latitude'])
+                name, meters = closestTarget(row['longitude'], row['latitude'], row['user'])
             except ValueError, e:
                 return 'err (%s)' % e
             if meters > 900:
@@ -252,12 +240,12 @@ class history(object):
             closest=closest,
             )
 
-locations = None
-def closestTarget(lng, lat):
+
+def closestTarget(lng, lat, user):
     """name and meters to the closest known target"""
-    global locations
-    if locations is None:
-        locations = readGoogleMapsLocations()
+
+    mapId = config['userMap'][user]
+    locations = readGoogleMapsLocations(mapId)
 
     g = Geod(ellps='WGS84')
     closest = (None, 0)
@@ -277,8 +265,8 @@ def closestTarget(lng, lat):
 
     return closest
 
-def describeLocation(lng, lat, horizAccuracy):
-    name, dist = closestTarget(lng, lat)
+def describeLocation(lng, lat, horizAccuracy, user):
+    name, dist = closestTarget(lng, lat, user)
     if dist < horizAccuracy:
         return "at %s (%dm away)" % (name, dist)
     if dist < 900:
@@ -296,7 +284,7 @@ def foafName(uri):
 def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')
     addr = jsonlib.read(geonames.get("findNearestAddressJSON",
-                                     lat=lat, lng=long).body, use_float=True)
+                                     lat=lat, lng=long).body_string(), use_float=True)
     if 'address' in addr:
         addr = addr['address']
         return "%s %s, %s %s" % (addr['streetNumber'],
@@ -305,7 +293,7 @@ def placeName(long, lat):
                                  addr['adminCode1'])
     else:
         pl = jsonlib.read(geonames.get("findNearbyPlaceNameJSON",
-                                       lat=lat, lng=long, style='short'),
+                                       lat=lat, lng=long, style='short').body_string(),
                           use_float=True)
         if 'geonames' in pl:
             return pl['geonames'][0]['name']
