@@ -223,6 +223,33 @@ function PlaceDraw(opts, coords, places) {
     }
 }
 
+function personStyle(uri) {
+    var initial = uri.replace(/.*[#/](.).*/,"$1").toUpperCase();
+    var personStyles = {
+        K: {
+	    trailStroke: "rgba(200,0,0,.2)",
+	    dotFill: 'pink'
+        },
+        D: {
+	    trailStroke: "rgba(0,200,0,.2)",
+	    dotFill: 'lightgreen'
+        },
+        J: {
+	    trailStroke: "rgba(255,0,0,.6)",
+	    dotFill: 'red'
+        }
+    };
+
+    var settings = personStyles[initial];
+    if (!settings) {
+        settings = {trailStroke: "rgba(200,200,200,1)", dotFill: "gray"};
+    }
+
+    settings.initial = initial;
+    return settings;
+}
+
+
 function Trails(coords, trailPoints) {
     function getControlPoints(x0,y0,x1,y1,x2,y2,t){
 	// from http://scaledinnovation.com/analytics/splines/splines.html
@@ -332,25 +359,7 @@ function Trails(coords, trailPoints) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
 	jQuery.each(trailPoints, function (name, pts) {
-	    var initial = name.replace(/.*[#/](.).*/,"$1").toUpperCase();
-
-	    var settings = {
-		K: {
-		    trailStroke: "rgba(200,0,0,.2)",
-		    dotFill: 'pink'
-		},
-		D: {
-		    trailStroke: "rgba(0,200,0,.2)",
-		    dotFill: 'lightgreen'
-		},
-                J: {
-		    trailStroke: "rgba(255,0,0,.6)",
-		    dotFill: 'red'
-		}
-	    }[initial];
-            if (!settings) {
-                settings = {trailStroke: "rgba(200,200,200,1)", dotFill: "gray"};
-            }
+            var settings = personStyle(name);
 
 	    var dotArgs = [];
 	    var canvasPoints = []; // Point objects
@@ -370,16 +379,84 @@ function Trails(coords, trailPoints) {
 	    jQuery.each(dotArgs, function (i, a) {
 		dot(ctx, a[0], a[1], a[2], a[3], a[4]);
 	    });
+	});
+    }
+}
 
-	    var lastPoint = pts[pts.length - 1]
-	    self.currentPositions.push(lastPoint);
-	    var cp = coords.toCanvas(Point(lastPoint.longitude, lastPoint.latitude));
 
-	    dot(ctx, cp, 10, 1, settings.dotFill, 'black');
+function distHaversine(lon1, lat1, lon2, lat2) {
+    // http://www.movable-type.co.uk/scripts/latlong.html
+    var R = 6371; // km
+    var rad = Math.PI / 180;
+    var dLat = (lat2-lat1) * rad;
+    var dLon = (lon2-lon1) * rad;
+    var lat1 = lat1 * rad;
+    var lat2 = lat2 * rad;
+
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c;
+    return d; // km
+}
+
+function PersonMarkers(coords, trailPoints) {
+    var self = this;
+
+    function drawDistances(ctx, markers) {
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(150,150,250,1)";
+
+        for (var i=0; i < markers.length; i++) {
+            for (var j=i+1; j < markers.length; j++) {
+                var m1=markers[i], m2=markers[j];
+
+                var box = Math.max(Math.abs(m1.canvasPoint.x - m2.canvasPoint.x), 
+                                   Math.abs(m1.canvasPoint.y - m2.canvasPoint.y));
+                if (box < 20) {
+                    continue;
+                }
+
+                ctx.beginPath();
+		ctx.moveTo(m1.canvasPoint.x, m1.canvasPoint.y);
+		ctx.lineTo(m2.canvasPoint.x, m2.canvasPoint.y);
+                ctx.stroke();
+
+                var km = distHaversine(m1.point.x, m1.point.y,
+                                       m2.point.x, m2.point.y);
+                var miles = km * 0.621371192;
+	        ctx.fillStyle = "black";
+	        ctx.font = "10px sans-serif";
+
+                ctx.fillText(miles.toFixed(2) + " mi", 
+                             (m1.canvasPoint.x + m2.canvasPoint.x) / 2,
+                             (m1.canvasPoint.y + m2.canvasPoint.y) / 2);
+            }
+        }
+    }
+
+    function drawMarkers(ctx, markers) {
+        $.each(markers, function (i, m) {
+	    dot(ctx, m.canvasPoint, 10, 1, m.settings.dotFill, 'black');
 	    ctx.fillStyle = "black";
 	    ctx.font = "16px sans-serif";
-	    ctx.fillText(initial, cp.x-6, cp.y+6);
-	});
+	    ctx.fillText(m.settings.initial, m.canvasPoint.x-6, m.canvasPoint.y+6);
+        });
+    }
+
+    this.draw = function(ctx, canvas) {
+        var markers = [];
+	jQuery.each(trailPoints, function (name, pts) {
+            var settings = personStyle(name);
+
+	    var lastPoint = pts[pts.length - 1]
+            var p = Point(lastPoint.longitude, lastPoint.latitude);
+	    var cp = coords.toCanvas(p);
+            markers.push({point: p, canvasPoint: cp, settings: settings});
+        });
+        drawDistances(ctx, markers);
+        drawMarkers(ctx, markers);
     }
 }
 
@@ -554,6 +631,7 @@ function makeMap(id, _opts) {
     var dirtyCanvas = setupBackgroundDrawing(g);
 
     var trails = new Trails(coords, trailPoints);
+    var personMarkers = new PersonMarkers(coords, trailPoints);
     g.size(coords.canMaxX, coords.canMaxY);
     if (opts.grid) {
 	g.add(new Grid(coords));
@@ -567,6 +645,7 @@ function makeMap(id, _opts) {
 
     g.add('places', new PlaceDraw(opts, coords, places));
     g.add(trails);
+    g.add(personMarkers);
     dirtyCanvas();
 
     setupDragZoom(g, coords, dirtyCanvas, opts.useScaleSlider);
