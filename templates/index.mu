@@ -156,7 +156,7 @@ table td {
               } 
           });
 
-          var socket = io.connect('/');
+          var socket = io.connect('/map/', {resource: "map/socket.io"});
           var stat = function (t) { $("#socketStat").text(t); };
           stat("startup");
           socket.on('reconnect_failed', function (r) { stat("reconnect failed"); });
@@ -165,7 +165,7 @@ table td {
           socket.on("disconnect", function () { stat("disconnected"); });
           socket.on("connect_failed", function (r) { stat("connect failed: "+r); })
 
-          socket.on("gotNewTrails", function (r) { m.gotNewTrails(r); });
+	  socket.of("").on("gotNewTrails", function (r) { m.gotNewTrails(r); });
       });
       // ]]>
     </script>

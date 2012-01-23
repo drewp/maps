@@ -664,10 +664,11 @@ function makeMap(id, _opts) {
     }
 
     function gotNewTrails(data) {
+
 	$.extend(trailPoints, data.trailPoints);
 
 	if (opts.motion == "auto") {
-	    coords.setScale(data.scale);
+	    // coords.setScale(data.scale);
 	    new centerPointSlide(coords, Point(data.center.longitude, data.center.latitude),
 				 function () { 
 				     dirtyCanvas();

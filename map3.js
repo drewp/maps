@@ -21,11 +21,12 @@ app.listen(9085);
 
 console.log('users come to http://localhost:9085/');
 
+var prod = process.env.NODE_ENV == "production";
 var am = assetManager({
     'js' : {
         path: __dirname + "/",
         route: /\/bundle\.js/,
-        dataType: 'js',
+        dataType: 'javascript',
         files: [
             'sendpos/app/assistants/gury/gury.js',
             'sendpos/app/assistants/matrix.js/matrix.js',
@@ -35,13 +36,21 @@ var am = assetManager({
             'backgroundmap.js',
             'sendpos/app/assistants/canvasmap.js'
         ],
-        debug: process.env.NODE_ENV != "production",
+        debug: !prod,
+	postManipulate: [
+	    function (file, path, index, isLast, callback) {
+		    // minifier bug lets '++new Date' from
+		    // socket.io.js into the result, which is a parse error.
+		callback(null, file.replace(/\+\+new Date/mig, 
+					    '\+\(\+new Date)'));
+	    }
+	]
     },
     'css' : {
         path: __dirname + "/",
         route: /\/bundle\.css/,
         dataType: 'css',
-        debug: process.env.NODE_ENV != "production",
+        debug: !prod,
         files: ["static/jquery-ui-1.8.17.custom/css/smoothness/jquery-ui-1.8.17.custom.css"]
     }
 });
@@ -50,6 +59,7 @@ app.use(am);
 
 var io = socketIo.listen(app);
 io.configure(function () {
+    io.set('resource', '/socket.io');
     io.set('transports', ['xhr-polling']);
     io.set('log level', 2);
 });
@@ -111,7 +121,7 @@ app.get("/", function (req, res) {
                 var t = moment(u.timestamp);
                 var now = moment();
                 u.lastSeen = t.from(now);
-                console.log(now, u.lastSeen, t.diff(now, 'hours'));
+
                 if (t.diff(now, 'hours') > -20) {
                     u.lastSeen += " (" + t.format("HH:mm") + ")";
                     u.recent = true;
