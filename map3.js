@@ -121,7 +121,9 @@ app.get("/", function (req, res) {
                 var t = moment(u.timestamp);
                 var now = moment();
                 u.lastSeen = t.from(now);
+
                 console.log(now, u.lastSeen, t.diff(now, 'hours'));
+
                 if (t.diff(now, 'hours') > -20) {
                     u.lastSeen += " (" + t.format("HH:mm") + ")";
                     u.recent = true;

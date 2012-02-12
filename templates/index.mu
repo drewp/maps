@@ -156,7 +156,31 @@ table td {
               } 
           });
 
-          var socket = io.connect('/');
+          var socket = io.connect('/map/', {resource: "map/socket.io"});
+
+          function recentPosMessage(update) {
+              return ", velocity "+update.velocity+", altitude "+update.altitude;
+          }
+
+          var updates = {{{updatesJson}}};
+          var people = updates.map(function (u) {
+              var p = {
+                  label: u.label,
+                  visible: ko.observable(true),
+                  follow: ko.observable(false),
+                  query: ko.observable("last 50 points"),
+                  lastSeen: ko.observable(u.timestamp),
+                  recentPos: ko.observable(recentPosMessage(u))
+              };
+              p.visible.subscribe(function (newValue) {
+                  console.log(p.label, newValue);
+              });
+              return p;
+
+          });
+          
+          ko.applyBindings({people: people});
+          
           var stat = function (t) { $("#socketStat").text(t); };
           stat("startup");
           socket.on('reconnect_failed', function (r) { stat("reconnect failed"); });
