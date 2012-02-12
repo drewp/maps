@@ -33,6 +33,7 @@ var am = assetManager({
             'sendpos/app/assistants/RTree/src/rtree.js',
             'sendpos/app/assistants/jquery.mousewheel.3.0.2/jquery.mousewheel.min.js',
             'parts/node/lib/node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.js',
+            process.env.NODE_ENV != "production" ? 'static/knockout-2.0.0.debug.js' : 'static/knockout-2.0.0.js',
             'backgroundmap.js',
             'sendpos/app/assistants/canvasmap.js'
         ],
@@ -117,11 +118,10 @@ app.get("/", function (req, res) {
 
             updates.forEach(function (u) { 
                 u.label = getLabelForUri(u.user);
-                var now = +new Date();
                 var t = moment(u.timestamp);
                 var now = moment();
                 u.lastSeen = t.from(now);
-
+                console.log(now, u.lastSeen, t.diff(now, 'hours'));
                 if (t.diff(now, 'hours') > -20) {
                     u.lastSeen += " (" + t.format("HH:mm") + ")";
                     u.recent = true;
@@ -136,7 +136,8 @@ app.get("/", function (req, res) {
                 bundleCss: am.cacheHashes['css'],
                 bundleJs: am.cacheHashes['js'],
                 mapIds: mapIds,
-                updates: updates
+                updates: updates,
+                updatesJson: JSON.stringify(updates)
             };
             Mu.render('index', ctx, {cached: process.env.NODE_ENV == "production"}, 
                       function (err, output) {

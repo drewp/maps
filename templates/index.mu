@@ -85,15 +85,15 @@ table td {
           <div class="controls">
             <div class="section">
               <h2>People</h2>
-              {{#updates}}
-              <div class="personRow">
-                <div class="user">{{label}} </div>
-                <div class="on"><input type="checkbox" checked="checked"/> Visible</div>
-                <div class="follow"><input type="checkbox"/> Follow</div>
-                <div class="showing">Showing <input type="text" value="last 3 hours | last 20 points | last trip" size="10"/></div>
-                <div class="lastSeen">Last seen {{lastSeen}}{{#recent}}, velocity {{velocity}}, altitude {{altitude}} {{/recent}}</div>
+              <div data-bind="foreach: people">
+                <div class="personRow">
+                  <div class="user" data-bind="text: label"> </div>
+                  <div class="on"><input type="checkbox" data-bind="checked: visible"/> Visible</div>
+                  <div class="follow"><input type="checkbox" data-bind="checked: follow"/> Follow</div>
+                  <div class="showing">Showing <input type="text" size="10" data-bind="value: query"/></div>
+                  <div class="lastSeen">Last seen <span data-bind="text: lastSeen"/> <span data-bind="text: recentPos"></span></div>
+                </div>
               </div>
-              {{/updates}}
             </div>
             <div class="section">
               <h2>Map</h2>
@@ -156,7 +156,7 @@ table td {
               } 
           });
 
-          var socket = io.connect('/map/', {resource: "map/socket.io"});
+          var socket = io.connect('/');
           var stat = function (t) { $("#socketStat").text(t); };
           stat("startup");
           socket.on('reconnect_failed', function (r) { stat("reconnect failed"); });

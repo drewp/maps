@@ -99,18 +99,22 @@ function Grid(coords) {
 
 	var count = (coords.toWorldX(coords.canMaxX) - coords.toWorldX(coords.canMinX)) / worldSpacing;
 	var canvasSpacing = (coords.canMaxX - coords.canMinX) / count;
-	if (canvasSpacing < 1.5) {
-	    worldSpacing *= 100;
+
+        if (canvasSpacing < 0.03) {
+            worldSpacing *= 60*60;
+            ctx.strokeStyle = "#55a";
+        } else if (canvasSpacing < 1.0) {
+	    worldSpacing *= 60*5;
 	    ctx.strokeStyle = "#a5a";
 	} else if(canvasSpacing < 2.5) {
-	    worldSpacing *= 50;
+	    worldSpacing *= 60;
 	    ctx.strokeStyle = "#aa5";
-	} else if(canvasSpacing < 10) {
-	    worldSpacing *= 5;
+	} else if(canvasSpacing < 25) {
+	    worldSpacing *= 10;
 	    ctx.strokeStyle = "#5aa";
 	}
 
-	ctx.lineWidth=.2;
+	ctx.lineWidth = .3;
 	ctx.beginPath();
 	for (var wx = coords.worldExtent.minX; wx < coords.worldExtent.maxX; wx += worldSpacing /*deg*/) {
 	    var cx = coords.toCanvas(Point(wx, 0)).x;
@@ -625,7 +629,9 @@ function makeMap(id, _opts) {
 			    worldExtent,
 			    opts.startCenter, opts.startZoom);
 
-    var trailPoints = {};
+    var trailPoints = {}; // user : updates, always maintained to the
+                          // current set we want to show, possibly
+                          // plus some extra people
 
     g = $g(id);
     var dirtyCanvas = setupBackgroundDrawing(g);
