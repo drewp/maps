@@ -20,6 +20,7 @@ render = render_genshi('templates', auto_reload=True)
 urls = (r'/', 'index',
         r'/history', 'history',
         r'/update', 'update',
+        r'/logPos.php', 'update',
         r'/trails', 'trails',
         r'/gmap', 'gmap',
         r'/drawMap.png', 'drawMapImg',
@@ -87,22 +88,43 @@ timeOfLastSms = {} # todo: compute this from the db instead
 class update(object):
 
     def GET(self):
-        """SendPosition for iphone won't use POST"""
+        """SendPosition for iphone won't use POST
+
+        nor does opengeotracker for android
+        """
         i = web.input()
 
-        user = config['sendPositionDeviceMap'][i['deviceid']]
+        user = config['sendPositionDeviceMap'][
+            i.get('key', i.get('deviceid', None))]
 
-        d = { "source" : "SendPosition",
-              "user" : user,
-              "timestamp" : long(time.time() * 1000),
-              "horizAccuracy" : float(i['hacc']),
-              "altitude" : float(i['altitude']),
-              "longitude" : float(i['lon']),
-              "latitude" : float(i['lat']),
-              "velocity" : float(i['speed']),
-              "vertAccuracy" : float(i['vacc']),
-              "heading" : float(i['heading'])
-              }
+        now = long(time.time() * 1000)
+
+        if 'key' in i:
+            d = {
+                "source" : "OpenGeoTracker",
+                "user" : user,
+                "timestamp" : now,
+                'longitude': float(i['longitude']),
+                'latitude': float(i['latitude']),
+                'altitude': float(i['altitude']),
+                'bearing': float(i['bearing']),
+                'tag': i.get('tag', ''),
+                'provider': i['provider'],
+                'speed': float(i['speed']),
+                'accuracy': float(i['accuracy']),
+                }
+        else:
+            d = { "source" : "SendPosition",
+                  "user" : user,
+                  "timestamp" : now,
+                  "horizAccuracy" : float(i['hacc']),
+                  "altitude" : float(i['altitude']),
+                  "longitude" : float(i['lon']),
+                  "latitude" : float(i['lat']),
+                  "velocity" : float(i['speed']),
+                  "vertAccuracy" : float(i['vacc']),
+                  "heading" : float(i['heading'])
+                  }
         return self.finish(d)
     
     def POST(self):
@@ -131,7 +153,7 @@ class update(object):
 
     def sendSms(self, d):
         name = describeLocation(d['longitude'], d['latitude'],
-                                d['horizAccuracy'],
+                                d.get('horizAccuracy', d.get('accuracy', 0)),
                                 d['user'] # this could be redone for each -recipient- user
                                 )
 
@@ -216,7 +238,7 @@ class history(object):
         rows = mongo.find().sort([("timestamp", -1)]).limit(50)
 
         def closest(row):
-            return describeLocation(row['longitude'], row['latitude'], row['horizAccuracy'], row['user'])
+            return describeLocation(row['longitude'], row['latitude'], row.get('horizAccuracy', row.get('accuracy', 0)), row['user'])
             try:
                 name, meters = closestTarget(row['longitude'], row['latitude'], row['user'])
             except ValueError, e:
