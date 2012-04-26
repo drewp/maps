@@ -35,7 +35,8 @@ var am = assetManager({
             'parts/node/lib/node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.js',
             process.env.NODE_ENV != "production" ? 'static/knockout-2.0.0.debug.js' : 'static/knockout-2.0.0.js',
             'backgroundmap.js',
-            'sendpos/app/assistants/canvasmap.js'
+            'sendpos/app/assistants/canvasmap.js',
+	    'static/page.js'
         ],
         debug: !prod,
 	postManipulate: [
