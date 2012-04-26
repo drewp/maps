@@ -1,5 +1,5 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
-xmlns:py="http://genshi.edgewall.org/">
+<!DOCTYPE html>
+<html>
   <head>
     <title>map</title>
     <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=yes"/>
@@ -11,7 +11,8 @@ xmlns:py="http://genshi.edgewall.org/">
     <table>
       <tr>
         <td>
-          <canvas id="mapArea"/>
+          <canvas id="mapArea"></canvas>
+	  <div>scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" data-highlight="true"></div>
         </td>
         <td>
           <div class="controls">
@@ -20,10 +21,10 @@ xmlns:py="http://genshi.edgewall.org/">
               <div data-bind="foreach: people">
                 <div class="personRow">
                   <div class="user" data-bind="text: label"> </div>
-                  <div class="on"><input type="checkbox" data-bind="checked: visible"/> Visible</div>
-                  <div class="follow"><input type="checkbox" data-bind="checked: follow"/> Follow</div>
-                  <div class="showing">Showing <input type="text" size="10" data-bind="value: query"/></div>
-                  <div class="lastSeen">Last seen <span data-bind="text: lastSeen"/> <span data-bind="text: recentPos"></span></div>
+                  <div class="on"><input type="checkbox" data-bind="checked: visible"> Visible</div>
+                  <div class="follow"><input type="checkbox" data-bind="checked: follow"> Follow</div>
+                  <div class="showing">Showing <input data-role="none" type="text" size="10" data-bind="value: query"></div>
+                  <div class="lastSeen">Last seen <span data-bind="text: lastSeen"></span> <span data-bind="text: recentPos"></span></div>
                 </div>
               </div>
             </div>
@@ -33,12 +34,12 @@ xmlns:py="http://genshi.edgewall.org/">
                 <ul>
                   {{#mapIds}}
                   <li>
-                    <input type="checkbox" id="map-{{row}}" autocomplete="off" onclick="toggleMap('{{id}}', this)"/> 
-                    <label for="map-{{row}}">{{id}} locations</label> <button class="mapRefresh" onclick="reloadMap('{{id}}', this)">Refresh from google</button>
+                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{id}}', this)"/> 
+                    <label for="map-{{row}}">{{id}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{id}}', this)">Refresh from google</button>
                   </li>
                   {{/mapIds}}
-                  <li><input type="checkbox" disabled="yes"/> Openstreetmap layer</li>
-                  <li><input type="checkbox" disabled="yes"/> Traffic</li>
+                  <li><input data-role="none" type="checkbox" disabled="disabled"> Openstreetmap layer</li>
+                  <li><input data-role="none" type="checkbox" disabled="disabled"> Traffic</li>
                 </ul>
               </div>
             </div>
@@ -48,9 +49,8 @@ xmlns:py="http://genshi.edgewall.org/">
               <a href="gmap">[googlemap]</a>
             </div>
             <div class="ctl">
-              <div>scale: <span id="scale"/></div>
-              <div id="paramDisplay"/>
-              <div>socket.io: <span id="socketStat"/></div>
+              <div id="paramDisplay"></div>
+              <div>socket.io: <span id="socketStat"></span></div>
             </div>
           </div>
         </td>

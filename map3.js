@@ -53,7 +53,17 @@ var am = assetManager({
         route: /\/bundle\.css/,
         dataType: 'css',
         debug: !prod,
-        files: ["static/jquery-ui-1.8.17.custom/css/smoothness/jquery-ui-1.8.17.custom.css"]
+        files: [//"static/jquery-ui-1.8.17.custom/css/smoothness/jquery-ui-1.8.17.custom.css",
+		"static/jquery.mobile-1.1.0.css",
+		"static/style.css"]
+    },
+    'cssSendpos' : {
+	path: __dirname + "/",
+	route: /\/bundle-sendpos.js/,
+	dataType: 'javascript',
+	files: [
+	    "sendpos.js"
+	]
     }
 });
 app.use(am);
@@ -113,7 +123,7 @@ function getLabelForUri(uri) {
 }
 
 app.get("/", function (req, res) { 
-    res.header("content-type", "application/xhtml+xml");
+    res.header("content-type", "text/html");//application/xhtml+xml");
     superagent.get("http://localhost:9084/places", function (mapIds) {
         lastUpdates(function (updates) {
 
@@ -153,6 +163,19 @@ app.get("/", function (req, res) {
                       });
         });
     });
+});
+
+app.get("/sendpos", function (req, res) {
+    res.header("content-type", "application/xhtml+xml");
+    Mu.render("sendpos", {}, {cached: process.env.NODE_ENV == "production"}, 
+              function (err, output) {
+                  if (err) {
+                      throw err;
+                  }
+                  output.addListener('data', 
+                                     function (c) { res.write(c); })
+                      .addListener('end', function () { res.end(); });
+              });
 });
 
 app.get("/places", function (req, res) {

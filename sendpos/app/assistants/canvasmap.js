@@ -580,7 +580,9 @@ function setupDragZoom(g, coords, dirtyCanvas, useScaleSlider) {
 	var mouseCanvas = getPosition(g.canvas, event);
 	zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
 	if (useScaleSlider) {
-	    jQuery("#scale").slider({value: coords.scale});
+	    var s = jQuery("#scale");
+	    s.val(coords.scale);
+	    s[0].refreshScale();
 	}
 	dirtyCanvas();
 	return false;
@@ -658,22 +660,24 @@ function makeMap(id, _opts) {
     var pinch = setupPinch(g, coords, dirtyCanvas);
 
     if (opts.useScaleSlider) {
-	$("#scale").slider({
-	    min: .1, max: 30, step: .001, 
-	    value: coords.scale, 
-	    slide: function (ev, ui) {
-		coords.setScale(ui.value);
-		    //$("#paramDisplay").text(JSON.stringify(coords));
-		dirtyCanvas();
-		return true;
-	    }});
+	$("#scale").val(coords.scale).slider("refresh");
+	$("#scale")[0].refreshScale = function () { $("#scale").slider("refresh"); };
+	$("#scale").bind("change", function (ev) {
+	    coords.setScale($(ev.target).val());
+	    //$("#paramDisplay").text(JSON.stringify(coords));
+	    dirtyCanvas();
+	    return true;
+	});
     }
 
     function gotNewTrails(data) {
 
 	$.extend(trailPoints, data.trailPoints);
+	usersToHide.map(function (u) { 
+	    delete trailPoints[u];
+	});
 
-	if (opts.motion == "auto") {
+	if (opts.motion == "auto" && data.center) {
 	    // coords.setScale(data.scale);
 	    new centerPointSlide(coords, Point(data.center.longitude, data.center.latitude),
 				 function () { 
@@ -682,7 +686,7 @@ function makeMap(id, _opts) {
 	} else if (opts.motion == "home") {
 	    // always keep startCenter visibile
 	    var allPts = [opts.startCenter];
-	    $.each(data.trailPoints, function (u, pts) {
+	    $.each(trailPoints, function (u, pts) {
 		$.each(pts, function (i, p) {
 		    allPts.push(p);
 		});
@@ -694,6 +698,9 @@ function makeMap(id, _opts) {
     function pollTrails() {
 	$.getJSON(opts.trailUri, gotNewTrails);
     }
+
+    var usersToHide = [];
+
     if (opts.useStomp) {
 	startStomp(gotNewTrails);
     } else {
@@ -711,6 +718,8 @@ function makeMap(id, _opts) {
 	},
 	pollTrails: pollTrails,
         gotNewTrails: gotNewTrails,
+	hideUser: function (u) { usersToHide.push(u); gotNewTrails({trailPoints:{}}); },
+	showUser: function (u) { usersToHide = usersToHide.filter(function (e) { return e != u; }); pollTrails(); },
 	pinchStart: pinch.pinchStart,
 	pinchChange: pinch.pinchChange,
         places: places
