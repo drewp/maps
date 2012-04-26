@@ -175,7 +175,7 @@ class update(object):
                     'user' : u,
                     'msg' : '%s position is %s %s' % (
                         foafName(d['user']), name, config['smsUrl']),
-                    'mode' : 'sms'
+                    'mode' : 'xmpp'
                 },
                           headers={'content-type' :
                                    'application/x-www-form-urlencoded'}
