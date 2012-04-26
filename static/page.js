@@ -1,5 +1,6 @@
 var toggleMap, reloadMap;
-$(document).bind("ready", function () {
+$(document).bind("pageinit", function () {
+    console.log("pageready");
     var m = makeMap('mapArea', {useStomp:false, trailUri: "trails"});
     toggleMap = function (id, elem) {
         var check = $(elem).closest("li").find("input")[0];

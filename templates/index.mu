@@ -6,12 +6,22 @@
     <link rel="Stylesheet" type="text/css" href="bundle.css?v={{bundleCss}}" media="all" >
 
 
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
+    <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.js"></script>
+
+    <script type="text/javascript">
+      var updates = {{{updatesJson}}};
+    </script>
+
+    <script src="bundle.js?v={{bundleJs}}"></script>
+<!--    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>-->
+
   </head>
   <body class="tundra">
     <table>
       <tr>
         <td>
-          <canvas id="mapArea"></canvas>
+          <canvas id="mapArea" data-toucharea="true"></canvas>
 	  <div>scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" data-highlight="true"></div>
         </td>
         <td>
@@ -56,15 +66,5 @@
         </td>
       </tr>
     </table>
-
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
-    <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.js"></script>
-
-    <script type="text/javascript">
-      var updates = {{{updatesJson}}};
-    </script>
-
-    <script src="bundle.js?v={{bundleJs}}"></script>
-<!--    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>-->
   </body>
 </html>

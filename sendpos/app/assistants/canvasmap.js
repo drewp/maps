@@ -568,25 +568,35 @@ function setupDragZoom(g, coords, dirtyCanvas, useScaleSlider) {
 	dirtyCanvas();
 	return false;
     }
-    jQuery(g.canvas).mousedown(function (e) {
+
+
+    function down(e) {
 	var pos = getPosition(g.canvas, e);
 	dragStartWorld = coords.toWorld(pos);
-	g.canvas.onmousemove = onMove;
-    }).mouseup(function (e) {
-	g.canvas.onmousemove = null;
-    }).mouseout(function (e) {
-	g.canvas.onmousemove = null;
-    }).bind('mousewheel', function (event, delta) {
-	var mouseCanvas = getPosition(g.canvas, event);
-	zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
-	if (useScaleSlider) {
-	    var s = jQuery("#scale");
-	    s.val(coords.scale);
-	    s[0].refreshScale();
-	}
-	dirtyCanvas();
-	return false;
-    });
+	$(g.canvas).bind("vmousemove", onMove);
+    }
+    function up(e) {
+	$(g.canvas).unbind("vmousemove", onMove);
+    }
+
+    jQuery(g.canvas).
+	bind("vmousedown", down).
+	bind("vmouseup", up).
+	bind("mouseout", function (e) {
+	    g.canvas.onmousemove = null;
+	}).bind('mousewheel', function (event, delta) {
+	    var mouseCanvas = getPosition(g.canvas, event);
+	    zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
+	    if (useScaleSlider) {
+		var s = jQuery("#scale");
+		s.val(coords.scale);
+		s[0].refreshScale();
+	    }
+	    dirtyCanvas();
+	    return false;
+	});
+//	bind('touchstart', down).
+//	bind('touchend', up);
 }
 
 function setupPinch(g, coords, dirtyCanvas) {
@@ -660,9 +670,12 @@ function makeMap(id, _opts) {
     var pinch = setupPinch(g, coords, dirtyCanvas);
 
     if (opts.useScaleSlider) {
-	$("#scale").val(coords.scale).slider("refresh");
-	$("#scale")[0].refreshScale = function () { $("#scale").slider("refresh"); };
-	$("#scale").bind("change", function (ev) {
+	var s = $("#scale")
+	s.val(coords.scale).slider("refresh");
+	s[0].refreshScale = function () { 
+	    s.slider("refresh"); 
+	};
+	s.bind("change", function (ev) {
 	    coords.setScale($(ev.target).val());
 	    //$("#paramDisplay").text(JSON.stringify(coords));
 	    dirtyCanvas();

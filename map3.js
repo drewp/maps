@@ -34,6 +34,7 @@ var am = assetManager({
             'sendpos/app/assistants/RTree/src/rtree.js',
             'sendpos/app/assistants/jquery.mousewheel.3.0.2/jquery.mousewheel.min.js',
             'static/' + (prod ? 'knockout-2.0.0.js' : 'knockout-2.0.0.debug.js'),
+	    'static/jquery.toucharea.js',
             'backgroundmap.js',
             'sendpos/app/assistants/canvasmap.js',
 	    'static/page.js'
