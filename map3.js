@@ -28,23 +28,23 @@ var am = assetManager({
         route: /\/bundle\.js/,
         dataType: 'javascript',
         files: [
-            'sendpos/app/assistants/gury/gury.js',
-            'sendpos/app/assistants/matrix.js/matrix.js',
+            'parts/node/lib/node_modules/socket.io/node_modules/socket.io-client/dist/' + (prod ? 'socket.io.min.js' : 'socket.io.js'),
+            'sendpos/app/assistants/gury/' + (prod ? 'gury.min.js' : 'gury.js'),
+            'sendpos/app/assistants/matrix.js/' + (prod ? 'matrix-1.2.0.min.js' : 'matrix.js'),
             'sendpos/app/assistants/RTree/src/rtree.js',
             'sendpos/app/assistants/jquery.mousewheel.3.0.2/jquery.mousewheel.min.js',
-            'parts/node/lib/node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.js',
-            process.env.NODE_ENV != "production" ? 'static/knockout-2.0.0.debug.js' : 'static/knockout-2.0.0.js',
+            'static/' + (prod ? 'knockout-2.0.0.js' : 'knockout-2.0.0.debug.js'),
             'backgroundmap.js',
             'sendpos/app/assistants/canvasmap.js',
 	    'static/page.js'
         ],
-        debug: !prod,
+        debug: true, // minifier is breaking things.   !prod,
 	postManipulate: [
 	    function (file, path, index, isLast, callback) {
 		    // minifier bug lets '++new Date' from
 		    // socket.io.js into the result, which is a parse error.
-		callback(null, file.replace(/\+\+new Date/mig, 
-					    '\+\(\+new Date)'));
+		callback(null, file.replace(/\+\+\(new Date\)/mig, 
+					    '\+\(\+(new Date))'));
 	    }
 	]
     },

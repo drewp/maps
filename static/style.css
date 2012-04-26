@@ -1,0 +1,67 @@
+body {
+    font-family: sans;
+    font-size: 11px;
+}
+.ctl input {
+    width: 300px;
+}
+#mapArea {
+    width: 600px;
+    height: 600px;
+    background: #dddbf4;
+}
+@media screen and (max-device-width: 480px) {
+    #mapArea {
+	width: 310px;
+	height: 310px;
+    }
+}
+
+.ui-slider-horizontal {
+    height: 20px;
+    width: 250px;
+    display: inline-block;
+}
+.personRow:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+.personRow > .user {
+    background: #ccc;
+    font-size: 120%;
+    font-weight: bold;
+    padding: 3px;
+}
+.personRow > .on  {float:left; width: 65px;}
+.personRow > .showing  {}
+.personRow > .follow  {float:left; width: 70px;}
+.personRow > .xlastSeen:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+
+.section {
+    background: #eee;
+    width: 335px;
+}
+
+.controls {
+    float:right;
+}
+table td {
+    vertical-align: top;
+}
+
+.mapRefresh {
+    font-size: 80%;
+}
+#scale {
+    height: 40px;
+    width: 300px;
+} 
