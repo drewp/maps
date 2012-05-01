@@ -11,6 +11,7 @@
 
     <script type="text/javascript">
       var updates = {{{updatesJson}}};
+      var me = {{{me}}};
     </script>
 
     <script src="bundle.js?v={{bundleJs}}"></script>
@@ -31,7 +32,9 @@
               <div data-bind="foreach: people">
                 <div class="personRow">
                   <div class="user" data-bind="text: label"> </div>
-                  <div class="on"><input type="checkbox" data-bind="checked: visible"> Visible</div>
+                  <div class="on">
+		    <input type="checkbox" data-bind="checked: visible"> Visible
+		  </div>
                   <div class="follow"><input type="checkbox" data-bind="checked: follow"> Follow</div>
                   <div class="showing">Showing <input data-role="none" type="text" size="10" data-bind="value: query"></div>
                   <div class="lastSeen">Last seen <span data-bind="text: lastSeen"></span> <span data-bind="text: recentPos"></span></div>
@@ -44,7 +47,7 @@
                 <ul>
                   {{#mapIds}}
                   <li>
-                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{id}}', this)"/> 
+                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{id}}', this)" autocomplete="no"/> 
                     <label for="map-{{row}}">{{id}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{id}}', this)">Refresh from google</button>
                   </li>
                   {{/mapIds}}

@@ -12,6 +12,7 @@ var mongodb = require("mongodb");
 var assetManager = require('connect-assetmanager');
 var assetHandler = require('connect-assetmanager-handlers');
 var Mu = require('Mu');
+var shared = require('./shared.js');
 Mu.templateRoot = './templates/';
 
 var proxy = new httpProxy.RoutingProxy();
@@ -35,6 +36,8 @@ var am = assetManager({
             'sendpos/app/assistants/jquery.mousewheel.3.0.2/jquery.mousewheel.min.js',
             'static/' + (prod ? 'knockout-2.0.0.js' : 'knockout-2.0.0.debug.js'),
 	    'static/jquery.toucharea.js',
+	    './parts/node/lib/node_modules/moment/min/moment.min.js',
+	    'shared.js',
             'backgroundmap.js',
             'sendpos/app/assistants/canvasmap.js',
 	    'static/page.js'
@@ -130,18 +133,7 @@ app.get("/", function (req, res) {
 
             updates.forEach(function (u) { 
                 u.label = getLabelForUri(u.user);
-                var t = moment(u.timestamp);
-                var now = moment();
-                u.lastSeen = t.from(now);
-
-                console.log(now, u.lastSeen, t.diff(now, 'hours'));
-
-                if (t.diff(now, 'hours') > -20) {
-                    u.lastSeen += " (" + t.format("HH:mm") + ")";
-                    u.recent = true;
-                } else {
-                    u.recent = false;
-                }
+		u.lastSeen = shared.lastSeenFormat(u.timestamp);
             });
 
             var j = 0;
@@ -151,7 +143,9 @@ app.get("/", function (req, res) {
                 bundleJs: am.cacheHashes['js'],
                 mapIds: mapIds,
                 updates: updates,
-                updatesJson: JSON.stringify(updates)
+                updatesJson: JSON.stringify(updates),
+		// should come from x-foaf-agent i think
+		me: JSON.stringify('http://bigasterisk.com/foaf.rdf#drewp')
             };
             Mu.render('index', ctx, {cached: process.env.NODE_ENV == "production"}, 
                       function (err, output) {

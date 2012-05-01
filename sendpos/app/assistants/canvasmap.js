@@ -362,7 +362,7 @@ function Trails(coords, trailPoints) {
     this.draw = function(ctx, canvas) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
-	jQuery.each(trailPoints, function (name, pts) {
+	jQuery.each(trailPoints.points, function (name, pts) {
             var settings = personStyle(name);
 
 	    var dotArgs = [];
@@ -451,7 +451,7 @@ function PersonMarkers(coords, trailPoints) {
 
     this.draw = function(ctx, canvas) {
         var markers = [];
-	jQuery.each(trailPoints, function (name, pts) {
+	jQuery.each(trailPoints.points, function (name, pts) {
             var settings = personStyle(name);
 
 	    var lastPoint = pts[pts.length - 1]
@@ -579,18 +579,26 @@ function setupDragZoom(g, coords, dirtyCanvas, useScaleSlider) {
 	$(g.canvas).unbind("vmousemove", onMove);
     }
 
+    function getWheelDelta(event) {
+	var oe = event.originalEvent;
+	return oe.wheelDeltaY ? (oe.wheelDeltaY / 120) : (oe.detail / -3);
+    }
+
     jQuery(g.canvas).
 	bind("vmousedown", down).
 	bind("vmouseup", up).
 	bind("mouseout", function (e) {
 	    g.canvas.onmousemove = null;
 	}).bind('mousewheel', function (event, delta) {
-	    var mouseCanvas = getPosition(g.canvas, event);
-	    zoomAbout(g.canvas, coords, Math.pow(1.3, delta), mouseCanvas);
+	    var mouseCanvas = getPosition(g.canvas, event.originalEvent);
+
+	    zoomAbout(g.canvas, coords, 
+		      Math.pow(1.3, getWheelDelta(event)), 
+		      mouseCanvas);
 	    if (useScaleSlider) {
 		var s = jQuery("#scale");
-		s.val(coords.scale);
-		s[0].refreshScale();
+		s.val(coords.scale).slider("refresh");
+		//s[0].refreshScale();
 	    }
 	    dirtyCanvas();
 	    return false;
@@ -631,7 +639,6 @@ function makeMap(id, _opts) {
 	radialGrid: false,
 	placeFontSize: 10,
 	placeColorRgb: "0,0,0",
-	trailUri: "https://bigasterisk.com/map/SECRET/trails"
     };
     $.extend(opts, _opts || {});
 
@@ -641,9 +648,9 @@ function makeMap(id, _opts) {
 			    worldExtent,
 			    opts.startCenter, opts.startZoom);
 
-    var trailPoints = {}; // user : updates, always maintained to the
-                          // current set we want to show, possibly
-                          // plus some extra people
+    var trailPoints = {points: {}}; // 'points' : {user : updates},
+                                    // always maintained to the
+                                    // current set we want to show
 
     g = $g(id);
     var dirtyCanvas = setupBackgroundDrawing(g);
@@ -685,10 +692,7 @@ function makeMap(id, _opts) {
 
     function gotNewTrails(data) {
 
-	$.extend(trailPoints, data.trailPoints);
-	usersToHide.map(function (u) { 
-	    delete trailPoints[u];
-	});
+	trailPoints.points = data.trailPoints;
 
 	if (opts.motion == "auto" && data.center) {
 	    // coords.setScale(data.scale);
@@ -699,7 +703,7 @@ function makeMap(id, _opts) {
 	} else if (opts.motion == "home") {
 	    // always keep startCenter visibile
 	    var allPts = [opts.startCenter];
-	    $.each(trailPoints, function (u, pts) {
+	    $.each(trailPoints.points, function (u, pts) {
 		$.each(pts, function (i, p) {
 		    allPts.push(p);
 		});
@@ -708,16 +712,9 @@ function makeMap(id, _opts) {
 	    dirtyCanvas();
 	}
     }
-    function pollTrails() {
-	$.getJSON(opts.trailUri, gotNewTrails);
-    }
-
-    var usersToHide = [];
 
     if (opts.useStomp) {
 	startStomp(gotNewTrails);
-    } else {
-	pollTrails();
     }
     
     return {
@@ -729,10 +726,7 @@ function makeMap(id, _opts) {
 	    coords.viewAll(trails.allVisiblePositions);
 	    dirtyCanvas();
 	},
-	pollTrails: pollTrails,
         gotNewTrails: gotNewTrails,
-	hideUser: function (u) { usersToHide.push(u); gotNewTrails({trailPoints:{}}); },
-	showUser: function (u) { usersToHide = usersToHide.filter(function (e) { return e != u; }); pollTrails(); },
 	pinchStart: pinch.pinchStart,
 	pinchChange: pinch.pinchChange,
         places: places

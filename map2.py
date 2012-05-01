@@ -1,6 +1,6 @@
 #!bin/python
 from __future__ import division
-import sys, web, time, jsonlib, logging, datetime, os, json
+import sys, web, time, jsonlib, logging, datetime, os, json, re
 from xml.utils import iso8601
 from dateutil.tz import tzlocal
 from web.contrib.template import render_genshi
@@ -191,13 +191,29 @@ class updateTrails(object):
         return '<div>ok</div>'
     GET = POST # webos is sending get for my $.post()
 
-def getUpdateMsg(movingUser=None):
+def getUpdateMsg(movingUser=None, query=None):
     trailPoints = {}
-    old = (time.time() - 3*60*60) * 1000
     for user in mongo.distinct('user'):
-        if user in ['?', None]:
+
+        userQuery = [row for row in query if row['user'] == user]
+        if userQuery:
+            userQuery = userQuery[0]
+        else:
+            userQuery = dict(visible=True, query='last 80 points')
+
+        if not userQuery['visible'] or user in ['?', None]:
             continue
-        recent = list(mongo.find({'user':user}, sort=[('timestamp', -1)], limit=50))
+
+        m = re.match(r'last (\d+) point', userQuery['query'])
+        if m:
+            limit = int(m.group(1))
+        else:
+            limit = 80
+
+        old = (time.time() - 3*60*60) * 1000
+        
+        recent = list(mongo.find({'user':user}, sort=[('timestamp', -1)],
+                                 limit=limit))
         recent.reverse()
         for r in recent:
             del r['_id']
@@ -223,7 +239,8 @@ class trails(object):
     def GET(self):
         # polling version of updateWebClients
         web.header('content-type', 'application/json')
-        return json.dumps(getUpdateMsg())
+        q = json.loads(web.input()['q'])
+        return json.dumps(getUpdateMsg(query=q))
 
 map3 = restkit.Resource(config['postUpdates'])
 def updateWebClients(movingUser=None):
