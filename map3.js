@@ -88,7 +88,14 @@ function readConfig() {
     return JSON.parse(fs.readFileSync("priv.json", 'utf8'));
 }
 
+var _collection;
+
 function getMapCollection(cb) {
+
+    if (_collection) {
+	cb(_collection);
+    }
+
     var config = readConfig();
 
     var m = config.mongo;
@@ -97,6 +104,7 @@ function getMapCollection(cb) {
         if (err) throw err;
         client.collection(m.collection, function (err, mongo) {
             if (err) throw err;
+	    _collection = mongo;
             cb(mongo);
         });
     });
