@@ -27,7 +27,7 @@ urls = (r'/', 'index',
         r'/updateTrails', 'updateTrails',
         )
 
-app = web.application(urls, globals())
+app = web.application(urls, globals(), autoreload=False)
 m = config['mongo']
 mongo = Connection(m['host'], m['port'])[m['db']][m['collection']]
 makeTime = lambda milli: datetime.datetime.fromtimestamp(milli/1000, tzlocal()).isoformat()
