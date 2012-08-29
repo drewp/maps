@@ -135,6 +135,13 @@ class update(object):
         # u'velocity': 0L, u'vertAccuracy': 0L,
         # u'heading': 0L, "user": "http://bigasterisk.com/foaf.rdf#drewp"}
 
+        if web.input().get('ping', ''):
+            # map3.js has done the update, but we need to send the
+            # announcements
+            d = mongo.find(sort=[('timestamp', -1)], limit=1).next()
+            self.sendUpdates(d)
+            return
+
         inJson = web.data().strip()
         if '"errorCode": 0' not in inJson and '"errorCode":0' not in inJson:
             raise ValueError(inJson)
@@ -148,6 +155,9 @@ class update(object):
     
     def finish(self, d):
         mongo.insert(d, safe=True)
+        self.sendUpdates(d)
+
+    def sendUpdates(self, d):
         updateWebClients(d['user'])
         return self.sendSms(d)
 
@@ -195,7 +205,8 @@ def getUpdateMsg(movingUser=None, query=None):
     trailPoints = {}
     for user in mongo.distinct('user'):
 
-        userQuery = [row for row in query if row['user'] == user]
+        userQuery = [row for row in (query or [])
+                     if row and row['user'] == user]
         if userQuery:
             userQuery = userQuery[0]
         else:
