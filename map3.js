@@ -1,6 +1,7 @@
 #!bin/node
 
 var express = require('express');
+var http = require('http');
 var socketIo = require('socket.io');
 var httpProxy = require('http-proxy');
 var superagent = require('superagent');
@@ -71,7 +72,7 @@ var am = assetManager({
     }
 });
 app.use(am);
-
+app.use(Connect.bodyParser());
 
 var io = socketIo.listen(app);
 io.configure(function () {
@@ -193,6 +194,117 @@ app.get("/gmap", function (req, res) {
 });
 app.get("/trails", function (req, res) {
     proxy.proxyRequest(req, res, {host: 'localhost', port: 9033});
+});
+
+function insertPoint(doc, onSuccess) {
+    if (!doc.timestamp) {
+	doc.timestamp = +new Date();
+    }
+    getMapCollection(function (coll) {
+	coll.insert(doc, {safe: true}, function (err, objects) {
+	    // I haven't ported all the update parts, so we use the
+	    // python server for that
+	    client = http.createClient(9033, 'localhost');
+	    var request = client.request('POST', '/update?ping=1', 
+					 {'content-length':'0'});
+	    request.end();
+	    request.on('response', function (response) {
+		if (response.statusCode != 200) {
+		    console.log("ping said");
+		    console.log(response.statusCode);
+		    response.on('data', function (chunk) {
+			console.log('BODY: ' + chunk);
+		    });
+		}
+		onSuccess();
+	    });
+	});
+    });
+}
+
+app.post("/webform1.aspx", function (req, res) {
+    /* as sent by https://play.google.com/store/apps/details?id=com.jeff.android.atracker */
+    console.log(req.body);
+    var fields = req.body.postStuff.trimRight().split(',')
+    var doc = {
+	user: req.body.postName.trim(),
+	longitude: parseFloat(fields[0]),
+	latitude: parseFloat(fields[1]),
+	smsUTC: +new Date(req.body.smsUTC + " GMT"),
+	field3: fields[3],
+	field4: fields[4],
+    }
+    insertPoint(doc, function () { res.end(); });
+});
+
+app.post("/myTracking", function (req, res) {
+    /* as sent by https://play.google.com/store/apps/details?id=com.wiebej.gps2mytracking
+       
+       configuration in there:
+          server: http://10.1.0.1:9085/
+          server side form: myTracking
+          user name: (foaf with %23 instead of #)
+          time before logging: 10
+          distance before logging: 5
+          start on boot: yes
+     */
+    var doc = {
+	user: req.query.name,
+	latitude: parseFloat(req.query.latitude),
+	longitude: parseFloat(req.query.longitude),
+	altitude: parseFloat(req.query.alt),
+	speed: parseFloat(req.query.speed),
+	crs: parseFloat(req.query.crs),
+	source: "GPS2MyTracking",
+	smsUTC: req.query.smsUTC
+    };
+    console.log(doc);
+    insertPoint(doc, function () { res.end(); });
+});
+
+app.post("/gprmc/Data", function (req, res) {
+    /*
+      note in GPS2OpenGTS android, you have to escape your own account
+      name as a query param, # -> %23
+      
+      http://aprs.gids.nl/nmea/#rmc
+    */
+
+    function toDeg(nmea, dir) {
+	// http://aprs.gids.nl/nmea/#rmc like 4916.45 N -> 49deg 16.45min
+	var degMin = nmea / 100;
+	var deg = Math.floor(degMin);
+	var min = (degMin - deg) * 100;
+	var sign = (dir == "W" || dir == "S") ? -1 : 1;
+	return sign * (deg + min / 60);
+    }
+
+    function metersPerSecFromKnots(knots) {
+	return knots * .514444;
+    }
+    
+    var cksum = req.query.gprmc.split("*");
+    var fields = cksum[0].split(",");
+    console.log(fields);
+    if (fields[0] != "$GPRMC") {
+	throw new Error("unknown gprmc format: "+req.query.gprmc);
+    }
+    if (fields[2] != "A") {
+	throw new Error("bad gprmc validity: "+req.query.gprmc);
+    }
+
+    var doc = {
+	user: req.query.acct,
+	gprmcTime: {time: fields[1], date: fields[9]},
+	latitude: toDeg(parseFloat(fields[3]), fields[4]),
+	longitude: toDeg(parseFloat(fields[5]), fields[6]),
+	velocity: metersPerSecFromKnots(parseFloat(fields[7])),
+	bearing: parseFloat(fields[8]),
+	variation: {degrees: parseFloat(fields[10] || "0"), dir: fields[11]},
+	source: "GPS2OpenGTS"
+    };
+    console.log(doc);
+    insertPoint(doc, function () { res.end(); });
 });
 
 // security trap- don't allow "/static/../secretfile" to work
