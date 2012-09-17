@@ -1,10 +1,7 @@
 function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
     var self=this;
 
-    this.canMinX = 0;
-    this.canMinY = 0;
-    this.canMaxX = canMaxX;
-    this.canMaxY = canMaxY;
+
     this.worldExtent = worldExtent;
 
     function recalc() {
@@ -49,9 +46,16 @@ function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
 	var diam = Math.max(r.maxX - r.minX, r.maxY - r.minY);
 	self.setScale(Math.pow(5/diam, 1/2) * .6); // way wrong
     }
-
+    this.updateSize = function (newWidth, newHeight) {
+	self.canMinX = 0;
+	self.canMinY = 0;
+	self.canMaxX = newWidth;
+	self.canMaxY = newHeight;
+	recalc();
+    }
     self.center = initialCenter;
     self.scale = initialScale;
+    self.updateSize(canMaxX, canMaxY);
     recalc();
 }
 
@@ -644,10 +648,24 @@ function makeMap(id, _opts) {
 
     var worldExtent = findExtent([]);
 
-    var coords = new Coords($("#"+id).width(), $("#"+id).height(), 
+    var canvas = $("#"+id);
+    var canvasCell = $("#mapAreaSize");
+    var coords = new Coords(canvasCell.width(), canvasCell.height(), 
 			    worldExtent,
 			    opts.startCenter, opts.startZoom);
+	
+    setInterval(function () {
+	if (canvasCell.width() != coords.canMaxX-10 ||
+	    canvasCell.height() != coords.canMaxY-10) {
+	    canvas.css({width: canvasCell.width()-10, 
+			height: canvasCell.width()-10 // not great yet
+		       });
+	    coords.updateSize(canvasCell.width(), canvasCell.height());
 
+	    dirtyCanvas();
+	}
+    }, 200);
+	
     var trailPoints = {points: {}}; // 'points' : {user : updates},
                                     // always maintained to the
                                     // current set we want to show

@@ -31,9 +31,9 @@ function Places() {
 
     this.addPlaces = function (id, forceReload) {
         if (self.showingPlaces(id)) return;
-        $.getJSON("places", {map: id, forceReload: forceReload ? "1" : ""}, 
+        $.getJSON("places/map", {m: id, forceReload: forceReload ? "1" : ""}, 
                   function (result) {
-                      loadedPlaces.push({id: id, places: result});
+                      loadedPlaces.push({id: id, places: result.places});
                       rebuild();
                   });
     };

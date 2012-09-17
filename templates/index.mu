@@ -21,11 +21,13 @@
   <body class="tundra">
     <table>
       <tr>
-        <td>
+        <td width="99%">
+<div id="mapAreaSize">
           <canvas id="mapArea" data-toucharea="true"></canvas>
+</div>
 	  <div>scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" data-highlight="true"></div>
         </td>
-        <td>
+        <td width="1%">
           <div class="controls">
             <div class="section">
               <h2>People</h2>
@@ -47,8 +49,8 @@
                 <ul>
                   {{#mapIds}}
                   <li>
-                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{id}}', this)" autocomplete="no"/> 
-                    <label for="map-{{row}}">{{id}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{id}}', this)">Refresh from google</button>
+                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{label}}', this)" autocomplete="no"/> 
+                    <label for="map-{{row}}">{{label}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{label}}', this)">Refresh from google</button>
                   </li>
                   {{/mapIds}}
                   <li><input data-role="none" type="checkbox" disabled="disabled"> Openstreetmap layer</li>
