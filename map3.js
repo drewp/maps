@@ -43,6 +43,7 @@ var am = assetManager({
 	    'static/shared.js',
             'static/backgroundmap.js',
             'static/canvasmap.js',
+	    'static/knockoutuniqueid.js',
 	    'static/page.js'
         ],
 	stale: false,

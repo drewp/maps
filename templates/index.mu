@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>map</title>
-    <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=yes"/>
+    <meta name="viewport" content="width=480, initial-scale=1.0, user-scalable=no"/>
     <link rel="Stylesheet" type="text/css" href="bundle.css?v={{bundleCss}}" media="all" >
 
 
@@ -19,57 +19,56 @@
 
   </head>
   <body class="tundra">
-    <table>
-      <tr>
-        <td width="99%">
-<div id="mapAreaSize">
-          <canvas id="mapArea" data-toucharea="true"></canvas>
-</div>
-	  <div>scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" data-highlight="true"></div>
-        </td>
-        <td width="1%">
-          <div class="controls">
-            <div class="section">
-              <h2>People</h2>
-              <div data-bind="foreach: people">
-                <div class="personRow">
-                  <div class="user" data-bind="text: label"> </div>
-                  <div class="on">
-		    <input type="checkbox" data-bind="checked: visible"> Visible
-		  </div>
-                  <div class="follow"><input type="checkbox" data-bind="checked: follow"> Follow</div>
-                  <div class="showing">Showing <input data-role="none" type="text" size="10" data-bind="value: query"></div>
-                  <div class="lastSeen">Last seen <span data-bind="text: lastSeen"></span> <span data-bind="text: recentPos"></span></div>
-                </div>
-              </div>
-            </div>
-            <div class="section">
-              <h2>Map</h2>
-              <div>
-                <ul>
-                  {{#mapIds}}
-                  <li>
-                    <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{label}}', this)" autocomplete="no"/> 
-                    <label for="map-{{row}}">{{label}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{label}}', this)">Refresh from google</button>
-                  </li>
-                  {{/mapIds}}
-                  <li><input data-role="none" type="checkbox" disabled="disabled"> Openstreetmap layer</li>
-                  <li><input data-role="none" type="checkbox" disabled="disabled"> Traffic</li>
-                </ul>
-              </div>
-            </div>
+    <canvas id="mapArea" data-toucharea="true"></canvas>
 
-            <div>
-              <a href="history">[history]</a>
-              <a href="gmap">[googlemap]</a>
-            </div>
-            <div class="ctl">
-              <div id="paramDisplay"></div>
-              <div>socket.io: <span id="socketStat"></span></div>
-            </div>
-          </div>
-        </td>
-      </tr>
-    </table>
+    <div id="scaleArea">scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" orientation="vertical" data-highlight="true"></div>
+
+
+    <div class="controls">
+      <div class="section">
+	<h2>People</h2>
+	<div data-bind="foreach: people">
+	  <div class="personRow">
+	    <div class="user" data-bind="text: label"> </div>
+	    <div class="on">
+	      <input type="checkbox" data-which="vis" data-bind="uniqueId: $data, checked: visible">
+              <label data-which="vis" data-bind="uniqueFor: $data">Visible</label>
+	    </div>
+	    <div class="follow">
+	      <input type="checkbox" data-which="fol" data-bind="uniqueId: $data, checked: follow"> 
+	      <label data-which="fol" data-bind="uniqueFor: $data">Follow</label>
+	    </div>
+	    <div class="showing">Showing <input data-role="none" type="text" size="10" data-bind="value: query"></div>
+	    <div class="lastSeen">Last seen <span data-bind="text: lastSeen"></span> <span data-bind="text: recentPos"></span></div>
+	  </div>
+	</div>
+      </div>
+      <div class="section">
+	<h2>Map</h2>
+	<div>
+	  <ul>
+	    {{#mapIds}}
+	    <li>
+	      <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{label}}', this)" autocomplete="no"/> 
+                <label for="map-{{row}}">{{label}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{label}}', this)">Refresh from google</button>
+                </li>
+		{{/mapIds}}
+		<li><input data-role="none" type="checkbox" disabled="disabled"> Openstreetmap layer</li>
+		<li><input data-role="none" type="checkbox" disabled="disabled"> Traffic</li>
+	      </ul>
+	    </div>
+	  </div>
+
+	  <div>
+	    <a href="history">[history]</a>
+	    <a href="gmap">[googlemap]</a>
+	  </div>
+	  <div class="ctl">
+	    <div id="paramDisplay"></div>
+	    <div>socket.io: <span id="socketStat"></span></div>
+	  </div>
+	</div>
+
+
   </body>
 </html>

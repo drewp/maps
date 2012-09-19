@@ -95,6 +95,23 @@ function findExtent(placeLocs) {
     return worldExtent;
 }
 
+function Borders(coords) {
+    /*
+      mostly for debugging that the canvas edge is against the window wall
+    */
+    this.draw = function (ctx, canvas) {
+	ctx.strokeStyle = "#aaa";
+	ctx.lineWidth = 8;
+	ctx.beginPath();
+	ctx.moveTo(20, 20);
+	ctx.lineTo(coords.canMaxX - 20, 20);
+	ctx.lineTo(coords.canMaxX - 20, coords.canMaxY - 20);
+	ctx.lineTo(20, coords.canMaxY - 20);
+	ctx.closePath();
+	ctx.stroke();
+    };
+}
+
 function Grid(coords) {
     this.draw = function (ctx, canvas) {
 
@@ -602,7 +619,6 @@ function setupDragZoom(g, coords, dirtyCanvas, useScaleSlider) {
 	    if (useScaleSlider) {
 		var s = jQuery("#scale");
 		s.val(coords.scale).slider("refresh");
-		//s[0].refreshScale();
 	    }
 	    dirtyCanvas();
 	    return false;
@@ -650,21 +666,16 @@ function makeMap(id, _opts) {
 
     var canvas = $("#"+id);
     var canvasCell = $("#mapAreaSize");
-    var coords = new Coords(canvasCell.width(), canvasCell.height(), 
+    var coords = new Coords(window.innerWidth, window.innerHeight,
 			    worldExtent,
 			    opts.startCenter, opts.startZoom);
-	
-    setInterval(function () {
-	if (canvasCell.width() != coords.canMaxX-10 ||
-	    canvasCell.height() != coords.canMaxY-10) {
-	    canvas.css({width: canvasCell.width()-10, 
-			height: canvasCell.width()-10 // not great yet
-		       });
-	    coords.updateSize(canvasCell.width(), canvasCell.height());
+    window.addEventListener('resize', function() { 
+	canvas[0].width = window.innerWidth;
+	canvas[0].height = window.innerHeight;
+	coords.updateSize(canvas[0].width, canvas[0].height);
+	dirtyCanvas();
+    }, false);
 
-	    dirtyCanvas();
-	}
-    }, 200);
 	
     var trailPoints = {points: {}}; // 'points' : {user : updates},
                                     // always maintained to the
@@ -676,6 +687,7 @@ function makeMap(id, _opts) {
     var trails = new Trails(coords, trailPoints);
     var personMarkers = new PersonMarkers(coords, trailPoints);
     g.size(coords.canMaxX, coords.canMaxY);
+    g.add(new Borders(coords));
     if (opts.grid) {
 	g.add(new Grid(coords));
     }
@@ -695,11 +707,12 @@ function makeMap(id, _opts) {
     var pinch = setupPinch(g, coords, dirtyCanvas);
 
     if (opts.useScaleSlider) {
-	var s = $("#scale")
-	s.val(coords.scale).slider("refresh");
-	s[0].refreshScale = function () { 
-	    s.slider("refresh"); 
-	};
+	var s = $("#scale");
+	s.val(coords.scale).slider({
+	    orientation: "vertical", 
+
+	}).slider("refresh");
+	
 	s.bind("change", function (ev) {
 	    coords.setScale($(ev.target).val());
 	    //$("#paramDisplay").text(JSON.stringify(coords));
