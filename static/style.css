@@ -53,7 +53,7 @@ body > div > table {
 
 .section {
     background: #eee;
-    width: 335px;
+    width: 255px;
 }
 table td {
     vertical-align: top;
@@ -73,6 +73,7 @@ table td {
 }
 .controls {
     background: #8f8f8f;
+    opacity: .9;
     position: absolute;
     right: 20px;
     top: 7px;

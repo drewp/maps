@@ -17,3 +17,35 @@ NODE_ENV=production ./maps3.js
 autoreload test mode:
 bin/node parts/node/bin/supervisor map3.js
 
+
+
+-------------------------------------
+
+iphone sends on:
+ /map/update
+
+routes go to:
+/map/ -> http://bang:9085/
+/map/tcp -> http://bang:9073/tcp
+
+location /map/          { proxy_pass http://bang:9023/map/; }
+location /map/socket.io/ { proxy_pass http://bang:9023/map/socket.io/; access_log off; }
+location /map/update {# sendpos client can't do openid, so this currently goes straight through
+  proxy_pass http://bang:9033/update;
+  access_log /var/log/nginx/map-update-access_log main;
+}
+
+servers:
+:9085 parts/node-v0.6.15/bin/node ./map3.js
+  uses :9084 places.py
+  uses :9033 map2.py
+:9086 also for map3.js
+:8084 ./serve
+
+new services:
+  /map/update (pings /map) :9033
+  notifier                 :9098 (writes to c3po, pings /map)
+  /map/places              :9084
+  /map/trails              
+  /map/history
+  /map/ (socketio for updates)
