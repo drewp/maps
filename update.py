@@ -97,7 +97,34 @@ def updatePost():
 
     return finish(d)
 
-run(host='localhost', port=9033)
+@route("/myTracking", method="POST")
+def myTrackingPost():
+    """
+     as sent by https://play.google.com/store/apps/details?id=com.wiebej.gps2mytracking
+       
+       configuration in there:
+          server: http://10.1.0.1:9033/
+          server side form: myTracking
+          user name: (foaf with %23 instead of #)
+          time before logging: 10
+          distance before logging: 5
+          start on boot: yes
+    """
+    q = request.query
+    doc = {
+        'timestamp' : long(time.time() * 1000),
+	'user': q.name,
+	'latitude': float(q.latitude),
+	'longitude': float(q.longitude),
+	'altitude': float(q.alt),
+	'speed': float(q.speed),
+	'crs': float(q.crs),
+	'source': "GPS2MyTracking",
+	'smsUTC': q.smsUTC
+    }
+    return finish(doc)
+
+run(host='0.0.0.0', port=9033)
 
 """
 // some other protcols from other phone senders which I haven't ported yet
@@ -114,31 +141,6 @@ app.post("/webform1.aspx", function (req, res) {
 	field3: fields[3],
 	field4: fields[4],
     }
-    insertPoint(doc, function () { res.end(); });
-});
-
-app.post("/myTracking", function (req, res) {
-    /* as sent by https://play.google.com/store/apps/details?id=com.wiebej.gps2mytracking
-       
-       configuration in there:
-          server: http://10.1.0.1:9085/
-          server side form: myTracking
-          user name: (foaf with %23 instead of #)
-          time before logging: 10
-          distance before logging: 5
-          start on boot: yes
-     */
-    var doc = {
-	user: req.query.name,
-	latitude: parseFloat(req.query.latitude),
-	longitude: parseFloat(req.query.longitude),
-	altitude: parseFloat(req.query.alt),
-	speed: parseFloat(req.query.speed),
-	crs: parseFloat(req.query.crs),
-	source: "GPS2MyTracking",
-	smsUTC: req.query.smsUTC
-    };
-    console.log(doc);
     insertPoint(doc, function () { res.end(); });
 });
 
