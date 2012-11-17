@@ -2,9 +2,11 @@
 """
 query for people's previous update points in mongodb
 """
-import json, re, time
+import json, re, time, logging
 from bottle import route, response, run, request
 from pymongo import Connection
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger()
 
 
 config = json.loads(open("priv.json").read())
@@ -18,19 +20,13 @@ def trails():
 
 def getUpdateMsg(movingUser=None, query=None):
     trailPoints = {}
-    for user in mongo.distinct('user'):
+    print "query %r" % query
 
-        userQuery = [row for row in (query or [])
-                     if row and row['user'] == user]
-        if userQuery:
-            userQuery = userQuery[0]
-        else:
-            userQuery = dict(visible=True, query='last 80 points')
+    for userQuery in query:
+        user = userQuery['user']
+        nlQuery = userQuery.get('query', 'last 80 points')
 
-        if not userQuery['visible'] or user in ['?', None]:
-            continue
-
-        m = re.match(r'last (\d+) point', userQuery['query'])
+        m = re.match(r'last (\d+) point', nlQuery)
         if m:
             limit = int(m.group(1))
         else:
@@ -47,18 +43,6 @@ def getUpdateMsg(movingUser=None, query=None):
             recent = recent[-4:]
         trailPoints[user] = recent
 
-    if movingUser:
-        ctr = trailPoints[movingUser][-1]
-    else:
-        ctrs = [pts[-1] for pts in trailPoints.values()]
-        ctr = {'longitude' : sum(c['longitude'] for c in ctrs)/len(ctrs),
-               'latitude' : sum(c['latitude'] for c in ctrs)/len(ctrs)}
-    try:
-        msg = dict(trailPoints=trailPoints, center=ctr, scale=8.3)
-    except Exception:
-        log.error("trailPoints=%r", trailPoints)
-        raise
-    
-    return msg
+    return dict(trailPoints=trailPoints)
 
 run(host="0.0.0.0", port=9099)

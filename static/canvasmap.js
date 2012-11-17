@@ -41,10 +41,24 @@ function Coords(canMaxX, canMaxY, worldExtent, initialCenter, initialScale) {
 	return self.toWorld(Point(cx, 0)).x;
     }
     this.viewAll = function (pts) {
+	console.log("framing these", pts);
 	var r = findExtent(pts);
 	self.setCenter(Point((r.minX + r.maxX) / 2, (r.minY + r.maxY) / 2));
 	var diam = Math.max(r.maxX - r.minX, r.maxY - r.minY);
+	if (diam == 0) {
+	    diam = .3; // for when there's only one point to frame
+	}
 	self.setScale(Math.pow(5/diam, 1/2) * .6); // way wrong
+
+/*
+this should take an anim duration and do an animation to the new map settings
+	    // coords.setScale(data.scale);
+	    new centerPointSlide(coords, Point(data.center.longitude, data.center.latitude),
+				 function () { 
+				     dirtyCanvas();
+				 });
+**/
+
     }
     this.updateSize = function (newWidth, newHeight) {
 	self.canMinX = 0;
@@ -92,6 +106,9 @@ function findExtent(placeLocs) {
 	    worldExtent.maxY = place[1][0];
 	}
     });
+    if (_.isEmpty(worldExtent)) {
+	return {minX: 0, maxX: 0, minY: 0, maxY: 0};
+    }
     return worldExtent;
 }
 
@@ -248,34 +265,7 @@ function PlaceDraw(opts, coords, places) {
     }
 }
 
-function personStyle(uri) {
-    var initial = uri.replace(/.*[#/](.).*/,"$1").toUpperCase();
-    var personStyles = {
-        K: {
-	    trailStroke: "rgba(200,0,0,.2)",
-	    dotFill: 'pink'
-        },
-        D: {
-	    trailStroke: "rgba(0,200,0,.2)",
-	    dotFill: 'lightgreen'
-        },
-        J: {
-	    trailStroke: "rgba(255,0,0,.6)",
-	    dotFill: 'red'
-        }
-    };
-
-    var settings = personStyles[initial];
-    if (!settings) {
-        settings = {trailStroke: "rgba(200,200,200,1)", dotFill: "gray"};
-    }
-
-    settings.initial = initial;
-    return settings;
-}
-
-
-function Trails(coords, trailPoints) {
+function Trails(coords, styles, trailPoints) {
     function getControlPoints(x0,y0,x1,y1,x2,y2,t){
 	// from http://scaledinnovation.com/analytics/splines/splines.html
 	/*
@@ -347,6 +337,11 @@ function Trails(coords, trailPoints) {
 	// but my canvasPoints are objects with x,y, not unpacked
 	// coordinate pairs
 	var n = canvasPoints.length;
+
+	if (n < 2) {
+	    return;
+	}
+
 	ctx.beginPath();
         ctx.moveTo(canvasPoints[0].x,canvasPoints[0].y);
         quadraticCurveToViaBez(ctx, canvasPoints[0].x,canvasPoints[0].y,
@@ -384,7 +379,7 @@ function Trails(coords, trailPoints) {
 	self.currentPositions = [];
 	self.allVisiblePositions = [];
 	jQuery.each(trailPoints.points, function (name, pts) {
-            var settings = personStyle(name);
+            var settings = styles[name];
 
 	    var dotArgs = [];
 	    var canvasPoints = []; // Point objects
@@ -425,7 +420,7 @@ function distHaversine(lon1, lat1, lon2, lat2) {
     return d; // km
 }
 
-function PersonMarkers(coords, trailPoints) {
+function PersonMarkers(coords, styles, trailPoints) {
     var self = this;
 
     function drawDistances(ctx, markers) {
@@ -463,17 +458,19 @@ function PersonMarkers(coords, trailPoints) {
 
     function drawMarkers(ctx, markers) {
         $.each(markers, function (i, m) {
-	    dot(ctx, m.canvasPoint, 10, 1, m.settings.dotFill, 'black');
+	    dot(ctx, m.canvasPoint, 14, 1, m.settings.dotFill, 'black');
 	    ctx.fillStyle = "black";
 	    ctx.font = "16px sans-serif";
-	    ctx.fillText(m.settings.initial, m.canvasPoint.x-6, m.canvasPoint.y+6);
+	    ctx.fillText(m.settings.initial, 
+			 m.canvasPoint.x-6*m.settings.initial.length, 
+			 m.canvasPoint.y+6);
         });
     }
 
     this.draw = function(ctx, canvas) {
         var markers = [];
 	jQuery.each(trailPoints.points, function (name, pts) {
-            var settings = personStyle(name);
+            var settings = styles[name];
 
 	    var lastPoint = pts[pts.length - 1]
             var p = Point(lastPoint.longitude, lastPoint.latitude);
@@ -659,6 +656,7 @@ function makeMap(id, _opts) {
 	radialGrid: false,
 	placeFontSize: 10,
 	placeColorRgb: "0,0,0",
+	styles: {}, // user uri : styles
     };
     $.extend(opts, _opts || {});
 
@@ -684,8 +682,8 @@ function makeMap(id, _opts) {
     g = $g(id);
     var dirtyCanvas = setupBackgroundDrawing(g);
 
-    var trails = new Trails(coords, trailPoints);
-    var personMarkers = new PersonMarkers(coords, trailPoints);
+    var trails = new Trails(coords, opts.styles, trailPoints);
+    var personMarkers = new PersonMarkers(coords, opts.styles, trailPoints);
     g.size(coords.canMaxX, coords.canMaxY);
     g.add(new Borders(coords));
     if (opts.grid) {
@@ -721,27 +719,14 @@ function makeMap(id, _opts) {
 	});
     }
 
-    function gotNewTrails(data) {
+    function gotNewTrails(data, usersToFrame, pointsToFrame) {
 
 	trailPoints.points = data.trailPoints;
 
-	if (opts.motion == "auto" && data.center) {
-	    // coords.setScale(data.scale);
-	    new centerPointSlide(coords, Point(data.center.longitude, data.center.latitude),
-				 function () { 
-				     dirtyCanvas();
-				 });
-	} else if (opts.motion == "home") {
-	    // always keep startCenter visibile
-	    var allPts = [opts.startCenter];
-	    $.each(trailPoints.points, function (u, pts) {
-		$.each(pts, function (i, p) {
-		    allPts.push(p);
-		});
-	    });
-	    coords.viewAll(allPts);
-	    dirtyCanvas();
-	}
+	coords.viewAll(_.union(
+	    _.map(usersToFrame || [], function (u) { return _.last(data.trailPoints[u]); }), 
+	    pointsToFrame || []));
+	dirtyCanvas();
     }
 
     if (opts.useStomp) {

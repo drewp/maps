@@ -2,12 +2,13 @@
 <html>
   <head>
     <title>map</title>
-    <meta name="viewport" content="width=480, initial-scale=1.0, user-scalable=no"/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
     <link rel="Stylesheet" type="text/css" href="bundle.css?v={{bundleCss}}" media="all" >
 
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
-    <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.js"></script>
+    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.js"></script>
 
     <script type="text/javascript">
       var updates = {{{updatesJson}}};
@@ -25,19 +26,27 @@
 
 
     <div class="controls">
+<h1>Settings</h1>
+<div id="controls-collapse">
       <div class="section">
 	<h2>People</h2>
 	<div data-bind="foreach: people">
 	  <div class="personRow">
 	    <div class="user" data-bind="text: label"> </div>
-	    <div class="on">
-	      <input type="checkbox" data-which="vis" data-bind="uniqueId: $data, checked: visible">
-              <label data-which="vis" data-bind="uniqueFor: $data">Visible</label>
-	    </div>
-	    <div class="follow">
-	      <input type="checkbox" data-which="fol" data-bind="uniqueId: $data, checked: follow"> 
-	      <label data-which="fol" data-bind="uniqueFor: $data">Follow</label>
-	    </div>
+
+	    <fieldset data-role="controlgroup" data-type="horizontal">
+	      <div class="ui-radio">
+	      <input type="radio" data-which="off" data-bind="uniqueId: $data, checked: mode" value="off" />
+	      <label data-which="off" data-bind="uniqueFor: $data">Off</label>
+	      </div><div class="ui-radio">
+	      <input type="radio" data-which="vis" data-bind="uniqueId: $data, checked: mode" value="visible" />
+	      <label data-which="vis" data-bind="uniqueFor: $data">Visible</label>
+	      </div><div class="ui-radio">
+	      <input type="radio" data-which="frame" data-bind="uniqueId: $data, checked: mode" value="frame" />
+	      <label data-which="frame" data-bind="uniqueFor: $data">Always in view</label>
+	      </div>
+	    </fieldset>
+
 	    <div class="showing">Showing <input data-role="none" type="text" size="10" data-bind="value: query"></div>
 	    <div class="lastSeen">Last seen <span data-bind="text: lastSeen"></span> <span data-bind="text: recentPos"></span></div>
 	  </div>
@@ -67,6 +76,8 @@
 	    <div id="paramDisplay"></div>
 	    <div>socket.io: <span id="socketStat"></span></div>
 	  </div>
+</div>
+
 	</div>
 
 

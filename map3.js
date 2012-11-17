@@ -12,6 +12,7 @@ var Connect = require('connect');
 var mongodb = require("mongodb");
 var assetManager = require('connect-assetmanager');
 var assetHandler = require('connect-assetmanager-handlers');
+var _ = require('underscore');
 var Mu = require('Mu');
 var shared = require('./static/shared.js');
 Mu.templateRoot = './templates/';
@@ -37,6 +38,7 @@ var am = assetManager({
             'static/lib/RTree/src/rtree.js',
             'static/lib/jquery.mousewheel.3.0.2/jquery.mousewheel.min.js',
             'static/lib/' + (prod ? 'knockout-2.0.0.js' : 'knockout-2.0.0.debug.js'),
+	    'parts/node/lib/node_modules/underscore/underscore.js',
 	    'static/lib/jquery.toucharea.js',
 		//'static/lib/flexie.min.js',
 	    'parts/node/lib/node_modules/moment/min/moment.min.js',
@@ -64,7 +66,7 @@ var am = assetManager({
 	stale: false,
         debug: !prod,
         files: [//"static/jquery-ui-1.8.17.custom/css/smoothness/jquery-ui-1.8.17.custom.css",
-		"static/lib/jquery.mobile-1.1.0.css",
+	    //"static/lib/jquery.mobile-1.2.0.css",
 		"static/style.css"]
     },
     'cssSendpos' : {
@@ -105,7 +107,9 @@ function getMapCollection(cb) {
     var config = readConfig();
 
     var m = config.mongo;
-    var client = new mongodb.Db(m.db, new mongodb.Server(m.host, m.port, {}));
+    var client = new mongodb.Db(m.db, 
+				new mongodb.Server(m.host, m.port), 
+				{safe: true});
     client.open(function (err, pClient) {
         if (err) throw err;
         client.collection(m.collection, function (err, mongo) {
@@ -137,7 +141,8 @@ function lastUpdates(cb) {
 
 function getLabelForUri(uri) { 
     var config = readConfig();
-    return config.foafNames[uri] || uri;
+    return _.extend({label: config.foafNames[uri] || uri}, 
+		    config.style[uri] || {});
 }
 
 app.get("/", function (req, res) { 
@@ -146,7 +151,7 @@ app.get("/", function (req, res) {
         lastUpdates(function (updates) {
 
             updates.forEach(function (u) { 
-                u.label = getLabelForUri(u.user);
+		_.extend(u, getLabelForUri(u.user));
 		u.lastSeen = shared.lastSeenFormat(u.timestamp);
             });
 

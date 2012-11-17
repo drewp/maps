@@ -78,4 +78,5 @@ table td {
     right: 20px;
     top: 7px;
     box-shadow: -3px 12px 50px rgba(0, 0, 0, 0.27);
+    width: 255px;
 }

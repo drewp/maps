@@ -1,7 +1,13 @@
 var toggleMap, reloadMap;
 $(document).bind("pageinit", function () {
 
-    var m = makeMap('mapArea', {useStomp:false, trailUri: "trails"});
+    var styles = _.object(updates.map(function (m) { return [m.user, m]; }));
+
+    var m = makeMap('mapArea', {
+	useStomp:false, 
+	trailUri: "trails", 
+	styles: styles
+    });
     toggleMap = function (id, elem) {
         var check = $(elem).closest("li").find("input")[0];
         if (check.checked) {
@@ -32,6 +38,15 @@ $(document).bind("pageinit", function () {
 
     var byUser = {};
     var people = updates.map(function (u) {
+
+	var initialMode = "off";
+	if (
+	    (u.user == me) || 
+		(me == 'http://bigasterisk.com/foaf.rdf#drewp' && u.user == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi') || 
+		(me == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' && u.user == 'http://bigasterisk.com/foaf.rdf#drewp')) {
+	    initialMode = "frame";
+	}
+
         var p = {
 	    // fixed
             label: u.label,
@@ -42,18 +57,14 @@ $(document).bind("pageinit", function () {
             recentPos: ko.observable(recentPosMessage(u)),
 
 	    // to server
-            visible: ko.observable(
-		(u.user == me) || 
-		    (me == 'http://bigasterisk.com/foaf.rdf#drewp' && u.user == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi') || 
-		    (me == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' && u.user == 'http://bigasterisk.com/foaf.rdf#drewp')),
-            follow: ko.observable(false),
+	    mode: ko.observable(initialMode), // or visible or frame
+
             query: ko.observable("last 80 points"),
         };
-	$.each([p.visible, p.follow, p.query], function (i, ui) {
-	    ui.subscribe(function (n) { 
-		updateWithNewQuery();
-	    });
+	p.isVisible = ko.computed(function () {
+	    return p.mode() == "visible" || p.mode() == "frame";
 	});
+
 	byUser[u.user] = p;
         return p;
 
@@ -67,16 +78,17 @@ $(document).bind("pageinit", function () {
 	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.timestamp));
 	    byUser[user].recentPos(recentPosMessage(latest));
 	});
-	m.gotNewTrails(r);
+	m.gotNewTrails(r, people.filter(function (p) { return p.mode() == "frame"; }).map(function (p) { return p.user; }), []);
     }
 
-    function updateWithNewQuery() {
+    var updateWithNewQuery = ko.computed(function () {
 	// the q sticks on the server for further updates
-	$.getJSON("trails", {q: ko.toJSON(people)}, function (trails) {
+	var q = ko.toJSON(people.filter(function (p) { return p.isVisible(); }));
+	$.getJSON("trails", {q: q}, function (trails) {
 	    gotNewTrails(trails);
 	});
-    }
-    updateWithNewQuery();
+    });
+
     
     var stat = function (t) { $("#socketStat").text(t); };
     stat("startup");
@@ -95,4 +107,10 @@ $(document).bind("pageinit", function () {
 	// workaround leads to an extra request and (small) data.
 	updateWithNewQuery();
     });
+
+    $("#controls-collapse").hide();
+    $(".controls h1").click(function () {
+	$("#controls-collapse").toggle();
+    });
+
 });
