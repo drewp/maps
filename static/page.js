@@ -70,7 +70,14 @@ $(document).bind("pageinit", function () {
 
     });
     
-    ko.applyBindings({people: people});
+    var model = {
+        people: people, 
+        pointsToFrame: ko.observableArray([
+            ['home',[-122,37]]
+        ]),
+    }
+
+    ko.applyBindings(model);
 
     function gotNewTrails(r) {
 	$.each(r.trailPoints, function (user, pts) {
@@ -78,7 +85,11 @@ $(document).bind("pageinit", function () {
 	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.timestamp));
 	    byUser[user].recentPos(recentPosMessage(latest));
 	});
-	m.gotNewTrails(r, people.filter(function (p) { return p.mode() == "frame"; }).map(function (p) { return p.user; }), []);
+	m.gotNewTrails(r, 
+                       people
+                       .filter(function (p) { return p.mode() == "frame"; })
+                       .map(function (p) { return p.user; }), 
+                       model.pointsToFrame());
     }
 
     var updateWithNewQuery = ko.computed(function () {

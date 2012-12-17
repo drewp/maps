@@ -742,7 +742,8 @@ function makeMap(id, _opts) {
 	trailPoints.points = data.trailPoints;
 
 	coords.viewAll(_.union(
-	    _.map(usersToFrame || [], function (u) { return _.last(data.trailPoints[u]); }), 
+	    _.map(usersToFrame || [], 
+                  function (u) { return _.last(data.trailPoints[u]); }), 
 	    pointsToFrame || []));
 	dirtyCanvas();
     }

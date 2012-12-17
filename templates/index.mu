@@ -52,6 +52,15 @@
 	  </div>
 	</div>
       </div>
+<div class="section">
+<h2>Places always in view</h2>
+<ul>
+<li>home <button>remove</button></li>
+<li><input type="text"> autocomplete <button disabled="disabled">Add</button></li>
+</ul>
+<h2>Add place</h2>
+<p>I am currently at <input type="text"> <button>Add to <span>perttula</span> map</button></p>
+</div>
       <div class="section">
 	<h2>Map</h2>
 	<div>
