@@ -77,12 +77,23 @@ function dot(ctx, pt, r, width, fill, stroke) {
     ctx.fillStyle = fill;
     ctx.lineWidth = width;
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, r, 0, 2*Math.PI, true);
+    ctx.arc(pt.x, pt.y, r, 0, 2*Math.PI, true /* clockwise */);
     ctx.fill();
     if (stroke) {
 	ctx.strokeStyle = stroke;
 	ctx.stroke();
     }
+}
+
+function ageDot(ctx, pt, r, width, fill, ageFraction) {
+    dot(ctx, pt, r, width, fill, 'black');
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, r, -Math.PI/2, -Math.PI/2+Math.PI*2*ageFraction, 
+            false /* clockwise */);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.fill();
+    dot(ctx, pt, r*.4, 0, fill);
 }
 
 function findExtent(placeLocs) {
@@ -455,10 +466,15 @@ function PersonMarkers(coords, styles, trailPoints) {
             }
         }
     }
-
+    function ageFraction(secs) {
+        return Math.pow(secs/86400, .5)
+    }
     function drawMarkers(ctx, markers) {
         $.each(markers, function (i, m) {
-	    dot(ctx, m.canvasPoint, 14, 1, m.settings.dotFill, 'black');
+	    ageDot(ctx, m.canvasPoint, 14, 1, m.settings.dotFill, 
+                   ageFraction(m.ageSecs));
+            // when you hover or poke the dot, it would be nice to
+            // pint the exact time and other stats
 	    ctx.fillStyle = "black";
 	    ctx.font = "16px sans-serif";
 	    ctx.fillText(m.settings.initial, 
@@ -472,10 +488,12 @@ function PersonMarkers(coords, styles, trailPoints) {
 	jQuery.each(trailPoints.points, function (name, pts) {
             var settings = styles[name];
 
-	    var lastPoint = pts[pts.length - 1]
+	    var lastPoint = pts[pts.length - 1];
+            var ageSecs = ((+new Date()) - lastPoint.timestamp) / 1000;
             var p = Point(lastPoint.longitude, lastPoint.latitude);
 	    var cp = coords.toCanvas(p);
-            markers.push({point: p, canvasPoint: cp, settings: settings});
+            markers.push({point: p, canvasPoint: cp, settings: settings, 
+                          ageSecs: ageSecs});
         });
         drawDistances(ctx, markers);
         drawMarkers(ctx, markers);
