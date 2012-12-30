@@ -1,19 +1,37 @@
 from __future__ import division
 
+import urllib
 from pyproj import Geod # geopy can do distances too
 from locations import readGoogleMapsLocations
+from rdflib import URIRef
+from remember.memoize import memoize
+import restkit, json, logging
+log = logging.getLogger()
 
 milesPerMeter = 0.000621371192237334
 
 def describeLocation(config, lng, lat, horizAccuracy, user):
+    desc, _, _, _ = describeLocationFull(config, lng, lat, horizAccuracy, user)
+    return desc
+
+def describeLocationFull(config, lng, lat, horizAccuracy, user):
     name, dist = closestTarget(config, lng, lat, user)
+
+    mapUri = URIRef("http://bigasterisk.com/map/%s" % config['userMap'][str(user)])
+    targetUri = URIRef("%s/locations/%s" % (mapUri, urllib.quote(name)))
+
     if dist < horizAccuracy:
-        return "at %s (%dm away)" % (name, dist)
-    if dist < 900:
-        return "%dm from %s" % (dist, name)
-    if dist < 10000:
-        return "%.2f miles from %s" % (dist * milesPerMeter, name)
-    return placeName(lng, lat)
+        desc = "at %s (%dm away)" % (name, dist)
+    elif dist < 900:
+        desc = "%dm from %s" % (dist, name)
+    elif dist < 10000:
+        desc = "%.2f miles from %s" % (dist * milesPerMeter, name)
+    else:
+        desc = placeName(lng, lat)
+        targetUri = URIRef("http://bigasterisk.com/map#geocoded")
+        dist = None
+        name = None
+    return desc, targetUri, name, dist
 
 def closestTarget(config, lng, lat, user):
     """name and meters to the closest known target"""
@@ -39,8 +57,10 @@ def closestTarget(config, lng, lat, user):
 
     return closest
 
+@memoize(cache_size=64)
 def placeName(long, lat):
     geonames = restkit.Resource('http://ws.geonames.org/')
+    log.info("going to ws.geonames.org for %s" % ((long,lat),))
     addr = json.loads(geonames.get("findNearestAddressJSON",
                                    lat=lat, lng=long).body_string())
     if 'address' in addr:
