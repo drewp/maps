@@ -71,7 +71,7 @@ def updateGet():
 @route("/update", method="POST")
 def updatePost():
     """
-    i forget what sender this was
+    i forget what sender this was, originally. Now used for android sl4a one
     """
     # {u'horizAccuracy': 1616L, u'timestamp': Decimal('1251629916354'),
     # u'altitude': 0L, u'longitude': Decimal('-120.000000'),
@@ -79,18 +79,11 @@ def updatePost():
     # u'velocity': 0L, u'vertAccuracy': 0L,
     # u'heading': 0L, "user": "http://bigasterisk.com/foaf.rdf#drewp"}
 
-    if web.input().get('ping', ''):
-        # map3.js has done the update, but we need to send the
-        # announcements
-        d = mongo.find(sort=[('timestamp', -1)], limit=1).next()
-        self.sendUpdates(d)
-        return
+    inJson = request.body.read().strip()
+    d = json.loads(inJson)
 
-    inJson = web.data().strip()
-    if '"errorCode": 0' not in inJson and '"errorCode":0' not in inJson:
-        raise ValueError(inJson)
-
-    d = jsonlib.read(inJson, use_float=True)
+    if 'timestamp' not in d and 'time' in d:
+        d['timestamp'] = d.pop('time')
 
     if not d.get('user', '').strip():
         raise ValueError("need user")
