@@ -23,10 +23,19 @@ $(document).bind("pageinit", function () {
     };
 
     // "user prefs"
+
+    var startMap = {
+        'http://bigasterisk.com/foaf/john' : 'Tulloch',
+        'http://bigasterisk.com/foaf/karin' : 'Tulloch',
+	'http://bigasterisk.com/foaf.rdf#drewp' : 'Perttula',
+        'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Perttula'
+    }[me];
+    console.log("me:", me, startMap);
+
     $("input").each(function (i, elem) { 
-        if (elem.getAttribute("onclick") == "toggleMap('Perttula', this)") {
+        if (elem.getAttribute("onclick") == "toggleMap('"+startMap+"', this)") {
             $(elem).click(); 
-            toggleMap('Perttula', elem);
+            toggleMap(startMap, elem);
         } 
     });
 
@@ -43,6 +52,7 @@ $(document).bind("pageinit", function () {
 	if (
 	    (u.user == me) || 
 		(me == 'http://bigasterisk.com/foaf.rdf#drewp' && u.user == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi') || 
+                (me == 'http://bigasterisk.com/foaf/john' && u.user == 'http://bigasterisk.com/foaf.rdf#drewp') || 
 		(me == 'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' && u.user == 'http://bigasterisk.com/foaf.rdf#drewp')) {
 	    initialMode = "frame";
 	}
