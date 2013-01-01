@@ -700,6 +700,17 @@ function makeMap(id, _opts) {
     g = $g(id);
     var dirtyCanvas = setupBackgroundDrawing(g);
 
+    function redrawLoop() {
+	/* keep redrawing so the wedges grow correctly */
+	setTimeout(function ()  {
+	    requestAnimFrame(function () {
+		dirtyCanvas();
+		redrawLoop();
+	    });
+	}, 5000);
+    }
+    redrawLoop();
+
     var trails = new Trails(coords, opts.styles, trailPoints);
     var personMarkers = new PersonMarkers(coords, opts.styles, trailPoints);
     g.size(coords.canMaxX, coords.canMaxY);

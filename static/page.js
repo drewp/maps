@@ -1,6 +1,13 @@
 var toggleMap, reloadMap;
 $(document).bind("pageinit", function () {
 
+    function log(msg) {
+	$("#log").append($("<div>").text(msg));
+	$("#log div").slice(0, -8).remove();
+    }
+
+    log("log started");
+
     var styles = _.object(updates.map(function (m) { return [m.user, m]; }));
 
     var m = makeMap('mapArea', {
@@ -17,6 +24,7 @@ $(document).bind("pageinit", function () {
         }
     };
     reloadMap = function (id, elem) {
+	log("reload map");
         var check = $(elem).closest("li").find("input")[0];
         check.checked = true
         m.places.reloadPlaces(id);
@@ -30,7 +38,7 @@ $(document).bind("pageinit", function () {
 	'http://bigasterisk.com/foaf.rdf#drewp' : 'Perttula',
         'http://bigasterisk.com/kelsi/foaf.rdf#kelsi' : 'Perttula'
     }[me];
-    console.log("me:", me, startMap);
+    log("logged in as "+me);
 
     $("input").each(function (i, elem) { 
         if (elem.getAttribute("onclick") == "toggleMap('"+startMap+"', this)") {
@@ -90,6 +98,7 @@ $(document).bind("pageinit", function () {
     ko.applyBindings(model);
 
     function gotNewTrails(r) {
+	log("updating trail display");
 	$.each(r.trailPoints, function (user, pts) {
 	    var latest = pts[pts.length - 1];
 	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.timestamp));
@@ -102,16 +111,19 @@ $(document).bind("pageinit", function () {
                        model.pointsToFrame());
     }
 
+    var trailsVersion = ko.observable(0);
+    
     var updateWithNewQuery = ko.computed(function () {
 	// the q sticks on the server for further updates
 	var q = ko.toJSON(people.filter(function (p) { return p.isVisible(); }));
+	trailsVersion();
 	$.getJSON("trails", {q: q}, function (trails) {
 	    gotNewTrails(trails);
 	});
     });
 
     
-    var stat = function (t) { $("#socketStat").text(t); };
+    var stat = function (t) { log("net: "+t); };
     stat("startup");
     socket.on('reconnect_failed', function (r) { stat("reconnect failed"); });
     socket.on("error", function (r) { stat("error "+r); });
@@ -120,6 +132,8 @@ $(document).bind("pageinit", function () {
     socket.on("connect_failed", function (r) { stat("connect failed: "+r); })
 
     socket.of("").on("gotNewTrails", function (r) { 
+	log("net: gotNewTrails");
+	trailsVersion(trailsVersion()+1);
 	//gotNewTrails(r); 
 
 	// someday this will arrive with the results of my query
@@ -129,9 +143,8 @@ $(document).bind("pageinit", function () {
 	updateWithNewQuery();
     });
 
-    $("#controls-collapse").hide();
     $(".controls h1").click(function () {
-	$("#controls-collapse").toggle();
+	$(".controls").toggleClass("opened");
     });
-
+    
 });

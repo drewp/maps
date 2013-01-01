@@ -75,8 +75,26 @@ table td {
     background: #8f8f8f;
     opacity: .9;
     position: absolute;
-    right: 20px;
+    right: 0;
     top: 7px;
     box-shadow: -3px 12px 50px rgba(0, 0, 0, 0.27);
     width: 255px;
+}
+.controls.opened {
+    bottom: 4px;
+    overflow-y: scroll;
+}
+.controls #controls-collapse {
+ display: none;
+}
+.controls.opened #controls-collapse {
+display: block;
+}
+#log {
+    bottom: 28px;
+    font-size: 10px;
+    left: 28px;
+    opacity: 0.5;
+    position: absolute;
+    width: 20em;
 }

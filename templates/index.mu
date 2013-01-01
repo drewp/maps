@@ -21,13 +21,14 @@
   </head>
   <body class="tundra">
     <canvas id="mapArea" data-toucharea="true"></canvas>
+    <div id="log"></div>
 
     <div id="scaleArea">scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" orientation="vertical" data-highlight="true"></div>
 
 
     <div class="controls">
-<h1>Settings</h1>
-<div id="controls-collapse">
+      <h1>Settings</h1>
+      <div id="controls-collapse">
       <div class="section">
 	<h2>People</h2>
 	<div data-bind="foreach: people">
@@ -83,7 +84,6 @@
 	  </div>
 	  <div class="ctl">
 	    <div id="paramDisplay"></div>
-	    <div>socket.io: <span id="socketStat"></span></div>
 	  </div>
 </div>
 
