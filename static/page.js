@@ -83,7 +83,7 @@ $(document).bind("pageinit", function () {
     var model = {
         people: people, 
         pointsToFrame: ko.observableArray([
-            ['home',[-122,37]]
+		['home',{longitude: -122,latitude:37}]
         ]),
     }
 
