@@ -166,8 +166,7 @@ app.get("/", function (req, res) {
                 mapIds: mapIds,
                 updates: updates,
                 updatesJson: JSON.stringify(updates),
-		// should come from x-foaf-agent i think
-		me: JSON.stringify('http://bigasterisk.com/foaf.rdf#drewp')
+		me: JSON.stringify(req.get("x-foaf-agent"))
             };
             Mu.render('index', ctx, {cached: process.env.NODE_ENV == "production"}, 
                       function (err, output) {
