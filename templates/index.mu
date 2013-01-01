@@ -52,7 +52,7 @@
 	  </div>
 	</div>
       </div>
-<div class="section">
+<!--<div class="section">
 <h2>Places always in view</h2>
 <ul>
 <li>home <button>remove</button></li>
@@ -60,7 +60,7 @@
 </ul>
 <h2>Add place</h2>
 <p>I am currently at <input type="text"> <button>Add to <span>perttula</span> map</button></p>
-</div>
+</div>-->
       <div class="section">
 	<h2>Map</h2>
 	<div>
