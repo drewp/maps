@@ -3,12 +3,10 @@
   <head>
     <title>map</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
-    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
     <link rel="Stylesheet" type="text/css" href="bundle.css?v={{bundleCss}}" media="all" >
 
 
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
-    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
 
     <script type="text/javascript">
       var updates = {{{updatesJson}}};

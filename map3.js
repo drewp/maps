@@ -42,6 +42,7 @@ var am = assetManager({
 	    'static/lib/jquery.toucharea.js',
 		//'static/lib/flexie.min.js',
 	    'parts/node/lib/node_modules/moment/min/moment.min.js',
+	    'static/lib/jquery.mobile-1.2.0.min.js',
 	    'static/shared.js',
             'static/backgroundmap.js',
             'static/canvasmap.js',
@@ -66,7 +67,7 @@ var am = assetManager({
 	stale: false,
         debug: !prod,
         files: [//"static/jquery-ui-1.8.17.custom/css/smoothness/jquery-ui-1.8.17.custom.css",
-	    //"static/lib/jquery.mobile-1.2.0.css",
+	        "static/lib/jquery.mobile-1.2.0.css",
 		"static/style.css"]
     },
     'cssSendpos' : {
