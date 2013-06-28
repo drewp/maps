@@ -27,7 +27,7 @@ def loadFromGoogle(id):
     if len(matches) != 1:
         raise ValueError("config had %s matches for id %s" % (len(matches), id))
     cookie = matches[0]
-    url = "http://maps.google.com/maps/ms?ie=UTF8&hl=en&vps=1&jsv=200b&msa=0&output=kml&msid=%s" % cookie
+    url = "https://maps.google.com/maps/ms?ie=UTF8&hl=en&vps=1&jsv=200b&msa=0&output=kml&msid=%s" % cookie
     t1 = time.time()
     try:
         feed = restkit.Resource(url).get().body_string()
