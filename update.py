@@ -117,7 +117,11 @@ def myTrackingPost():
     }
     return finish(doc)
 
-run(host='0.0.0.0', port=9033)
+@route("/")
+def index():
+    return "update.py service for maps. receives phone updates; writes mongodb"
+
+run(host='0.0.0.0', port=9033, server='cherrypy')
 
 """
 // some other protcols from other phone senders which I haven't ported yet
