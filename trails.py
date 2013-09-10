@@ -8,7 +8,8 @@ from bottle import route, response, run, request
 from rdflib import Namespace, URIRef, Literal, RDFS
 from dateutil.tz import tzutc, tzlocal
 from pymongo import Connection
-from describelocation import describeLocationFull
+from pyproj import Geod
+from describelocation import describeLocationFull, metersFromHome
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger()
 
@@ -60,6 +61,8 @@ def graph():
         g.add((user, MAP['lastNear'], targetUri))
         g.add((targetUri, RDFS.label, Literal(targetName)))
         g.add((user, MAP['lastDesc'], Literal(desc)))
+        g.add((user, MAP['distanceToHomeM'], Literal(metersFromHome(
+            config, user, pt['longitude'], pt['latitude']))))
         if ago < 60*15:
             g.add((user, MAP['recentlyNear'], targetUri))
         log.debug("added %s", user)

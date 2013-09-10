@@ -9,6 +9,17 @@ import restkit, json, logging
 log = logging.getLogger()
 
 milesPerMeter = 0.000621371192237334
+geod = Geod(ellps='WGS84')
+
+def metersFromHome(config, user, lng, lat):
+    locs = readGoogleMapsLocations(config['userMap'][str(user)])
+    for name, pt in locs:
+        if name == 'home':
+            break
+    else:
+        raise ValueError("unknown 'home' location for %s" % user)
+    _, _, m = geod.inv(lng, lat, pt[1], pt[0])
+    return m
 
 def describeLocation(config, lng, lat, horizAccuracy, user):
     desc, _, _, _ = describeLocationFull(config, lng, lat, horizAccuracy, user)
@@ -39,12 +50,11 @@ def closestTarget(config, lng, lat, user):
     mapId = config['userMap'][user]
     locations = readGoogleMapsLocations(mapId)
 
-    g = Geod(ellps='WGS84')
     closest = (None, 0)
     
     for name, target in locations:
         try:
-            _, _, dist = g.inv(lng, lat, target[1], target[0])
+            _, _, dist = geod.inv(lng, lat, target[1], target[0])
         except ValueError:
             eps = .0001 # not sure how close Geod breaks
             if (abs(lng - target[1]) < eps and
