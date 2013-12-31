@@ -18,7 +18,7 @@
 
   </head>
   <body class="tundra">
-    <canvas id="mapArea" data-toucharea="true"></canvas>
+    <canvas id="mapArea"></canvas>
     <div id="log"></div>
 
     <div id="scaleArea">scale: <input id="scale" name="scale" type="range" min="0.1" max="30" step="0.001" orientation="vertical" data-highlight="true"></div>

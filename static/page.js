@@ -15,6 +15,17 @@ $(document).bind("pageinit", function () {
 	trailUri: "trails", 
 	styles: styles
     });
+
+    Hammer(document.getElementById('mapArea'))
+        .on("transformstart pinch", function (ev) {
+            var g = ev.gesture, c = g.center;
+            if (ev.type == 'transformstart') {
+                m.pinchStart(c.pageX, c.pageY, g.scale);
+            } else {
+                m.pinchChange(c.pageX, c.pageY, g.scale);
+            }
+        });
+            
     toggleMap = function (id, elem) {
         var check = $(elem).closest("li").find("input")[0];
         if (check.checked) {
