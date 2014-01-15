@@ -22,13 +22,14 @@ def on_message(mosq, obj, msg):
         "user" : userFromTopic,
         "longitude" : float(payload['lon']),
         "latitude" : float(payload['lat']),
-        "altitude" : float(payload['alt']),
-        "accuracy" : payload['acc'],
         "source" : "mqttitude",
     }
+    for attr in ['alt', 'batt', 'acc']:
+        if attr in payload:
+            record[attr] = payload[attr]
     print record
     updateServer.post(payload=json.dumps(record))
-
+    print "finished message"
 
 client.on_message = on_message
 
