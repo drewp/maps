@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf8">
+    <style>
+.event {
+white-space: pre;
+border-bottom: 1px solid gray;
+font-size: 9pt;
+font-family: monospace;
+}
+    </style>
+  </head>
+  <body ng-app="app" ng-controller="ctrl">
+    <h1>recent gps update events</h1>
+    <fieldset>
+      <div>User must contain: <input type="text" ng-model="userSubstr"></div>
+      <button ng-click="refresh()">Refresh</button>
+      </fieldset>
+    <div>{{status}}</div>
+    <div ng-repeat="row in events" class="event">
+      <h2>Received {{row.minsAgo | number:2}} minutes ago ({{row.pretty}})</h2>
+      {{row.raw|json}}
+    </div>
+
+    <script src="//bigasterisk.com/lib/angular/angular-1.2.6.min.js"></script>
+    <script src="gui.js"></script>
+  </body>
+</html>
+
