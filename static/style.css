@@ -98,3 +98,18 @@ display: block;
     position: absolute;
     width: 20em;
 }
+
+#settings {
+    margin: 0;
+    padding: 11px;
+}
+
+.ui-radio {
+    padding: 0 6px;
+}
+
+.controls a:nth-child(1) {
+    color: blue;
+    font-size: 140%;
+    text-shadow: none;
+}

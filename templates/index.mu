@@ -25,7 +25,7 @@
 
 
     <div class="controls">
-      <h1>Settings</h1>
+      <h1 id="settings">Settings</h1>
       <div id="controls-collapse">
       <div class="section">
 	<h2>People</h2>
@@ -35,14 +35,16 @@
 
 	    <fieldset data-role="controlgroup" data-type="horizontal">
 	      <div class="ui-radio">
-	      <input type="radio" data-which="off" data-bind="uniqueId: $data, checked: mode" value="off" />
-	      <label data-which="off" data-bind="uniqueFor: $data">Off</label>
-	      </div><div class="ui-radio">
-	      <input type="radio" data-which="vis" data-bind="uniqueId: $data, checked: mode" value="visible" />
-	      <label data-which="vis" data-bind="uniqueFor: $data">Visible</label>
-	      </div><div class="ui-radio">
-	      <input type="radio" data-which="frame" data-bind="uniqueId: $data, checked: mode" value="frame" />
-	      <label data-which="frame" data-bind="uniqueFor: $data">Always in view</label>
+	        <input type="radio" data-which="off" data-bind="uniqueId: $data, checked: mode" value="off" />
+	        <label data-which="off" data-bind="uniqueFor: $data">Off</label>
+	      </div>
+              <div class="ui-radio">
+	        <input type="radio" data-which="vis" data-bind="uniqueId: $data, checked: mode" value="visible" />
+	        <label data-which="vis" data-bind="uniqueFor: $data">Visible</label>
+	      </div>
+              <div class="ui-radio">
+	        <input type="radio" data-which="frame" data-bind="uniqueId: $data, checked: mode" value="frame" />
+	        <label data-which="frame" data-bind="uniqueFor: $data">Always in view</label>
 	      </div>
 	    </fieldset>
 
@@ -77,8 +79,8 @@
 	  </div>
 
 	  <div>
-	    <a href="history">[history]</a>
-	    <a href="gmap">[googlemap]</a>
+	    <a data-ajax="false" href="history/">History</a>
+	    <a data-ajax="false" href="gmap">[googlemap]</a>
 	  </div>
 	  <div class="ctl">
 	    <div id="paramDisplay"></div>
