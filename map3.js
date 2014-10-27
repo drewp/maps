@@ -156,9 +156,12 @@ app.get("/", function (req, res) {
     superagent.get("http://localhost:9084/places", function (placesResult) {
         lastUpdates(function (updates) {
 
-            updates.forEach(function (u) { 
-		_.extend(u, getLabelForUri(u.user));
-		u.lastSeen = shared.lastSeenFormat(u.timestamp);
+            updates = updates.map(function (u) {
+                var out = {
+                    user: u.user
+                };
+		_.extend(out, getLabelForUri(u.user));
+                return out;		
             });
 
             var j = 0;
@@ -170,7 +173,6 @@ app.get("/", function (req, res) {
                 bundleCss: am.cacheHashes['css'],
                 bundleJs: am.cacheHashes['js'],
                 mapIds: mapIds,
-                updates: updates,
                 updatesJson: JSON.stringify(updates),
 		me: JSON.stringify(req.get("x-foaf-agent"))
             };

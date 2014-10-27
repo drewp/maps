@@ -1,5 +1,13 @@
 var toggleMap, reloadMap;
+
 $(document).bind("pageinit", function () {
+
+    function recentPosMessage(update) {
+        if (!update.alt) {
+            return "";
+        }
+        return ", altitude "+update.alt;
+    }
 
     function log(msg) {
 	$("#log").append($("<div>").text(msg));
@@ -59,13 +67,6 @@ $(document).bind("pageinit", function () {
     });
 
     var socket = io.connect('/map/', {resource: "map/socket.io"});
-
-    function recentPosMessage(update) {
-        if (!update.alt) {
-            return "";
-        }
-        return ", altitude "+update.alt;
-    }
 
     var byUser = {};
     var people = updates.map(function (u) {

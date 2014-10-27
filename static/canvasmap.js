@@ -469,6 +469,18 @@ function PersonMarkers(coords, styles, trailPoints) {
     function ageFraction(secs) {
         return Math.pow(secs/86400, .5)
     }
+    function ageLabel(secs) {
+        if (secs < 60) {
+            return '' + Math.round(secs) + 's';
+        }
+        if (secs < 60 * 60) {
+            return '' + Math.round(secs / 60) + 'm';
+        }
+        if (secs < 60 * 60 * 10) {
+            return '' + Math.round(secs / 3600) + 'h';
+        }
+        return '10h+';
+    }
     function drawMarkers(ctx, markers) {
         $.each(markers, function (i, m) {
 	    ageDot(ctx, m.canvasPoint, 14, 1, m.settings.dotFill, 
@@ -480,6 +492,9 @@ function PersonMarkers(coords, styles, trailPoints) {
 	    ctx.fillText(m.settings.initial, 
 			 m.canvasPoint.x-6*m.settings.initial.length, 
 			 m.canvasPoint.y+6);
+	    ctx.font = "12px sans-serif";
+            ctx.fillText(ageLabel(m.ageSecs), m.canvasPoint.x + 15,
+                         m.canvasPoint.y + 4);
         });
     }
 
@@ -489,7 +504,7 @@ function PersonMarkers(coords, styles, trailPoints) {
             var settings = styles[name];
 
 	    var lastPoint = pts[pts.length - 1];
-            var ageSecs = ((+new Date()) - lastPoint.timestamp) / 1000;
+            var ageSecs = ((+new Date()) - lastPoint.t_ms) / 1000;
             var p = Point(lastPoint.longitude, lastPoint.latitude);
 	    var cp = coords.toCanvas(p);
             markers.push({point: p, canvasPoint: cp, settings: settings, 
