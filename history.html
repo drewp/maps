@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf8">
     <style>
-.event {
-white-space: pre;
-border-bottom: 1px solid gray;
-font-size: 9pt;
-font-family: monospace;
-}
+     td, th {
+       text-align: left;
+       padding-right:10px;
+       font-size: 9px;
+       font-family: monospace;
+     }
     </style>
   </head>
   <body ng-app="app" ng-controller="ctrl">
@@ -18,10 +18,35 @@ font-family: monospace;
       <button ng-click="refresh()">Refresh</button>
       </fieldset>
     <div>{{status}}</div>
-    <div ng-repeat="row in events" class="event">
-      <h2>Received {{row.minsAgo | number:2}} minutes ago ({{row.pretty}})</h2>
-      {{row.raw|json}}
-    </div>
+    <table>
+      <tr>
+        <th>minsAgo</th>
+        <th>timestamp</th>
+        <th>timestamp</th>
+        <th>recv_time</th>
+        <th>user</th>
+        <th>lat</th>
+        <th>lng</th>
+        <th>alt</th>
+        <th>acc</th>
+        <th>batt</th>
+        <th>src</th>
+      </tr>
+    <tr ng-repeat="row in events" class="event">
+      <td>{{row.minsAgo | number:2}}</td>
+      <td>{{row.pretty}}</td>
+      <td>{{row.raw.timestamp}}</td>
+      <td>{{row.raw.recv_time}}</td>
+      <td>{{row.raw.user}}</td>
+      <td>{{row.raw.latitude}}</td>
+      <td>{{row.raw.longitude}}</td>
+      <td>{{row.raw.alt}}</td>
+      <td>{{row.raw.acc}}</td>
+      <td>{{row.raw.batt}}</td>
+      <td>{{row.raw.source}}</td>
+      <!-- <td>{{row.raw|json}}</td>  -->
+    </tr>
+    </table>
 
     <script src="//bigasterisk.com/lib/angular/angular-1.2.6.min.js"></script>
     <script src="gui.js"></script>
