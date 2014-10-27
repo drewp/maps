@@ -87,6 +87,7 @@ def updatePost():
 
     if not d.get('user', '').strip():
         raise ValueError("need user")
+    d['recv_time'] = time.time()
 
     return finish(d)
 
