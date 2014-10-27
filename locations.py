@@ -22,31 +22,51 @@ def listMapIds():
     return [m['id'] for m in mappings]
 
 def loadFromGoogle(id):
-    mappings = loadMappings()
-    matches = [m['msid'] for m in mappings if m['id'] == id]
-    if len(matches) != 1:
-        raise ValueError("config had %s matches for id %s" % (len(matches), id))
-    cookie = matches[0]
-    url = "https://maps.google.com/maps/ms?ie=UTF8&hl=en&vps=1&jsv=200b&msa=0&output=kml&msid=%s" % cookie
+    for m in loadMappings():
+        if m['id'] == id:
+            if 'kml' in m:
+                url = m['kml']
+            else:
+                url = "https://maps.google.com/maps/ms?ie=UTF8&hl=en&vps=1&jsv=200b&msa=0&output=kml&msid=%s" % m['msid']
+            break
+    else:
+        raise ValueError("no matches for id %r" % id)
     t1 = time.time()
-    try:
-        feed = restkit.Resource(url).get().body_string()
-    except socket.gaierror, e:
-        try:
-            feed = open("priv-googlemaps.cache").read()
-        except IOError:
-            log.warn(e)
-            return []
-    log.info("load google map data in %s sec" % (time.time() - t1))
-    
+
+    feed = restkit.Resource(url).get().body_string()
+    log.info("load google map data, %s bytes in %s sec" % (len(feed), time.time() - t1))
     root = etree.fromstring(feed.encode('utf8'))
 
     #return parseGeoRss(root)
-    return parseKml(root)
+    return parseKml(root) or parseKmlOld(root)
     
 
 def parseKml(root):
     '''
+    'new My Maps' from 2014:
+    <kml xmlns='http://www.opengis.net/kml/2.2'>
+        <Document>
+                <name>locs</name>
+                <Folder>
+                        <Placemark>
+                                <name>home</name>
+                                <Point>
+                                        <coordinates>-123,45,0.0</coordinates>
+                                </Point>
+                        </Placemark>
+    '''
+    KML = "http://www.opengis.net/kml/2.2"
+    ret = []
+    for item in root.xpath("/k:kml/k:Document/k:Folder/k:Placemark", namespaces={"k":KML}):
+        title = item.find("{%s}name" % KML).text
+        coords = item.find("{%s}Point" % KML).find("{%s}coordinates" % KML).text
+        lng,lat,_ = map(float, coords.split(","))
+        ret.append((title, (lat, lng)))
+    return ret
+
+def parseKmlOld(root):
+    '''
+    My Maps, unupgraded:
         <kml xmlns="http://earth.google.com/kml/2.2">
         <Document>
           <Placemark>
