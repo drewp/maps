@@ -17,7 +17,12 @@ def finish(d):
     """
     after gathering the attributes into the dict, call this to write it and ping notifier
     """
-    mongo.insert(d, safe=True)
+    print "writing to mongo %s" % json.dumps(d)
+    print mongo.insert(d, safe=True)
+    print "  assigned id", d['_id']
+    found = mongo.find_one(d['_id'])
+    if found['user'] != d['user']:
+        raise ValueError("new record doesn't match sent data")
     # if you get this far, the primary request was a success. Further
     # errors are only logged.
     try:
