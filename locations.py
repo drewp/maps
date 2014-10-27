@@ -106,3 +106,6 @@ def parseGeoRss(root):
         ret.append((item.find('title').text, (lat, lng)))
     return ret
 
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    print loadFromGoogle('Perttula')
