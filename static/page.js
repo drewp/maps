@@ -112,7 +112,7 @@ $(document).bind("pageinit", function () {
 	log("updating trail display");
 	$.each(r.trailPoints, function (user, pts) {
 	    var latest = pts[pts.length - 1];
-	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.timestamp));
+	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.t_ms));
 	    byUser[user].recentPos(recentPosMessage(latest));
 	});
 	m.gotNewTrails(r, 

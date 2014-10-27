@@ -122,6 +122,10 @@ function getMapCollection(cb) {
     });
 }
 
+var time_sort = {timestamp: -1};
+// see trails.py
+time_sort = {recv_time: -1};
+
 function lastUpdates(cb) {
     getMapCollection(function (map) {
         map.ensureIndex({user: 1, timestamp: -1}, {}, function (err, done) {
@@ -132,7 +136,7 @@ function lastUpdates(cb) {
                 users = users.filter(function (u) { return u && u != "?"; });
 
                 async.map(users, function (u, cb2) {
-                    map.findOne({user: u}, {sort: {timestamp:-1}}, cb2);
+                    map.findOne({user: u}, {sort: time_sort}, cb2);
                 }, function (err, updates) {
                     cb(updates);
                 });

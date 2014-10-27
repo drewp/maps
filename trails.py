@@ -21,6 +21,16 @@ from stategraph import StateGraph
 config = json.loads(open("priv.json").read())
 m = config['mongo']
 mongo = Connection(m['host'], m['port'])[m['db']][m['collection']]
+mongo.ensure_index([('recv_time', 1)])
+
+TIME_SORT = ('timestamp', -1)
+def pt_sec(pt): return pt['timestamp'] / 1000
+
+if 1:
+    # owntracks is stalling on the 'tst' time value, but sending mostly ok data
+    TIME_SORT = ('recv_time', -1)
+    def pt_sec(pt): return pt['recv_time']
+    
 
 @route("/trails")
 def trails():
@@ -36,15 +46,15 @@ def graph():
                  URIRef("http://bigasterisk.com/kelsi/foaf.rdf#kelsi"),
                  ]:
         log.debug("find points for %s", user)
-        pt = list(mongo.find({'user':user}, sort=[('timestamp', -1)], limit=1))
+        pt = list(mongo.find({'user':user}, sort=[TIME_SORT], limit=1))
         if not pt:
             continue
         pt = pt[0]
-        t = datetime.datetime.fromtimestamp(pt['timestamp'] / 1000,
-                                            tzutc()).astimezone(tzlocal())
+        t = datetime.datetime.fromtimestamp(
+            pt_sec(pt), tzutc()).astimezone(tzlocal())
         g.add((user, MAP['lastSeen'], Literal(t)))
 
-        ago = int(time.time() - pt['timestamp'] / 1000)
+        ago = int(time.time() - pt_sec(pt))
         g.add((user, MAP['lastSeenAgoSec'], Literal(ago)))
         g.add((user, MAP['lastSeenAgo'], Literal(
             "%s seconds" % ago if ago < 60 else
@@ -88,13 +98,17 @@ def getUpdateMsg(movingUser=None, query=None):
 
         old = (time.time() - 3*60*60) * 1000
         
-        recent = list(mongo.find({'user':user}, sort=[('timestamp', -1)],
+        recent = list(mongo.find({'user':user}, sort=[TIME_SORT],
                                  limit=limit))
         recent.reverse()
+           
+        if len(recent) > 1 and pt_sec(recent[-2]) < old:
+            recent = recent[-4:]
         for r in recent:
             del r['_id']
-        if len(recent) > 1 and recent[-2]['timestamp'] < old:
-            recent = recent[-4:]
+            r['t_ms'] = int(pt_sec(r) * 1000)
+            del r['timestamp']
+            del r['recv_time']
         trailPoints[user] = recent
 
     return dict(trailPoints=trailPoints)

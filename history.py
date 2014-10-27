@@ -17,7 +17,7 @@ def events():
                                   re.IGNORECASE)
     
     return {'events': list(mongo.find(spec,
-                                      sort=[('timestamp', -1)],
+                                      sort=[('recv_time', -1)],
                                       limit=100,
                                       fields={'_id':0},
                                   ))}
