@@ -96,7 +96,7 @@ def getUpdateMsg(movingUser=None, query=None):
         else:
             limit = 80
 
-        old = (time.time() - 3*60*60) * 1000
+        old = (time.time() - 20*60*60)
         
         recent = list(mongo.find({'user':user}, sort=[TIME_SORT],
                                  limit=limit))
