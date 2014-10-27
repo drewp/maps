@@ -61,7 +61,10 @@ $(document).bind("pageinit", function () {
     var socket = io.connect('/map/', {resource: "map/socket.io"});
 
     function recentPosMessage(update) {
-        return ", velocity "+update.velocity+", altitude "+update.altitude;
+        if (!update.alt) {
+            return "";
+        }
+        return ", altitude "+update.alt;
     }
 
     var byUser = {};
