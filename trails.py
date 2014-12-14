@@ -117,7 +117,8 @@ def getUpdateMsg(movingUser=None, query=None):
 def filter_stale(recent):
     keep = []
     for r in recent:
-        if r['recv_time'] - .001 * int(r['timestamp']) < 1500:
+        if 'recv_time' not in r or (
+                r['recv_time'] - .001 * int(r['timestamp']) < 1500):
             keep.append(r)
     return keep
 

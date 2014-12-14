@@ -6,6 +6,8 @@ No c3po announcements here.
 """
 from bottle import route, run, request
 import json, time, restkit, traceback
+from dateutil.parser import parse
+from dateutil.tz import tzlocal
 from pymongo import Connection
 
 config = json.loads(open("priv.json").read())
@@ -34,14 +36,17 @@ def finish(d):
 
 @route("/update", method="GET")
 def updateGet():
-    """SendPosition for iphone won't use POST
+    """SendPosition for iphone won't use POST *or* gpsLogging android app.
 
     nor does opengeotracker for android
     """
     params = request.query
 
+
     user = config['sendPositionDeviceMap'][
-        params.get('key', params.get('deviceid', None))]
+        params.get('key',
+                   params.get('deviceid',
+                              params.get('user', None)))]
 
     now = long(time.time() * 1000)
 
@@ -59,6 +64,20 @@ def updateGet():
             'speed': float(params['speed']),
             'accuracy': float(params['accuracy']),
             }
+    elif 'time' in params:
+        # GPSLogger, with my format string
+        d = {
+            'source': 'GPSLogger',
+            'user': user,
+            'timestamp': int(parse(params['time']).astimezone(tzlocal()).strftime('%s000')),
+            'latitude': float(params['lat']),
+            'longitude': float(params.get('longitude', params.get('long', None))),
+            'altitude': float(params['alt']),
+            'speed': float(params['s']),
+            'battery': float(params['batt']),
+            'provider': params['prov'],
+        }
+        if 'acc' in params: d['accuracy'] = float(params['acc'])
     else:
         d = { "source" : "SendPosition",
               "user" : user,
@@ -71,6 +90,8 @@ def updateGet():
               "vertAccuracy" : float(params['vacc']),
               "heading" : float(params['heading'])
               }
+        
+    d['recv_time'] = time.time()
     return finish(d)
 
 @route("/update", method="POST")
