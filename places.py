@@ -14,9 +14,9 @@ def places():
 
 @route('/places/map')
 def placesMap():
-    locs = readGoogleMapsLocations(request.query['m'],
-                                   bool(request.query.get('forceReload', '')))
-    return {'places': locs}
+    ret = readGoogleMapsLocations(request.query['m'],
+                                  bool(request.query.get('forceReload', '')))
+    return ret
 
 
 run(host="0.0.0.0", port=9084)

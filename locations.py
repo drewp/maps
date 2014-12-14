@@ -8,10 +8,10 @@ def readGoogleMapsLocations(id, forceReload=False):
     if (_recent.get(id) is not None and
         _recent[id][0] > now - 10*60 and
         not forceReload):
-        return _recent[id][1]
-    locs = loadFromGoogle(id)
+        return {'places': _recent[id][1], 'fromCache': True}
+    locs, report = loadFromGoogle(id)
     _recent[id] = (now, locs)
-    return locs
+    return {'places': locs, 'loadReport': report, 'fromCache': False}
 
 def loadMappings():
     return json.loads(open("priv.json").read())['googleMaps']
@@ -22,6 +22,7 @@ def listMapIds():
     return [m['id'] for m in mappings]
 
 def loadFromGoogle(id):
+    report = {}
     for m in loadMappings():
         if m['id'] == id:
             if 'kml' in m:
@@ -33,12 +34,14 @@ def loadFromGoogle(id):
         raise ValueError("no matches for id %r" % id)
     t1 = time.time()
 
+    report['mapSource'] = url
     feed = restkit.Resource(url).get().body_string()
     log.info("load google map data, %s bytes in %s sec" % (len(feed), time.time() - t1))
+    report['result'] = feed
     root = etree.fromstring(feed.encode('utf8'))
 
     #return parseGeoRss(root)
-    return parseKml(root) or parseKmlOld(root)
+    return parseKml(root) or parseKmlOld(root), report
     
 
 def parseKml(root):
