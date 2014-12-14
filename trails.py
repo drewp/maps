@@ -101,6 +101,7 @@ def getUpdateMsg(movingUser=None, query=None):
         recent = list(mongo.find({'user':user}, sort=[TIME_SORT],
                                  limit=limit))
         recent.reverse()
+        recent = filter_stale(recent)
            
         if len(recent) > 1 and pt_sec(recent[-2]) < old:
             recent = recent[-4:]
@@ -112,5 +113,12 @@ def getUpdateMsg(movingUser=None, query=None):
         trailPoints[user] = recent
 
     return dict(trailPoints=trailPoints)
+
+def filter_stale(recent):
+    keep = []
+    for r in recent:
+        if r['recv_time'] - .001 * int(r['timestamp']) < 1500:
+            keep.append(r)
+    return keep
 
 run(server='gevent', host="0.0.0.0", port=9099)
