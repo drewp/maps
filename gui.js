@@ -11,10 +11,16 @@ angular
                     var now = +new Date();
                     $scope.events = result.events.map(function (raw) {
                         var rowTime = new Date(raw.timestamp);
+                        var recv_pretty = '?';
+                        if (raw.recv_time) {
+                            recv_pretty = new Date(raw.recv_time * 1000).toISOString();
+                        }
                         return {
                             raw: raw,
                             pretty: rowTime.toISOString(),
-                            minsAgo: (now - (+rowTime)) / 1000 / 60
+                            recv_pretty: recv_pretty,
+                            minsAgo: (now - (+rowTime)) / 1000 / 60,
+                            user_trunc: raw.user.replace(/.*[#\/]/, '')
                         };
                     });
                                                       

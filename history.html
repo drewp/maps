@@ -24,6 +24,7 @@
         <th>timestamp</th>
         <th>timestamp</th>
         <th>recv_time</th>
+        <th>recv_time</th>
         <th>user</th>
         <th>lat</th>
         <th>lng</th>
@@ -36,8 +37,9 @@
       <td>{{row.minsAgo | number:2}}</td>
       <td>{{row.pretty}}</td>
       <td>{{row.raw.timestamp}}</td>
+      <td>{{row.recv_pretty}}</td>
       <td>{{row.raw.recv_time}}</td>
-      <td>{{row.raw.user}}</td>
+      <td>{{row.user_trunc}}</td>
       <td>{{row.raw.latitude}}</td>
       <td>{{row.raw.longitude}}</td>
       <td>{{row.raw.alt}}</td>
