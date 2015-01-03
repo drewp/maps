@@ -21,7 +21,14 @@ client.subscribe("/mqttitude/#", 0)
 def on_message(mosq, obj, msg):
     payload = json.loads(msg.payload)
     log.info("got message %r %r", msg.topic, payload)
-    userFromTopic = config['mqttTopic'][msg.topic]
+    try:
+        userFromTopic = config['mqttTopic'][msg.topic]
+    except KeyError:
+        log.warn("ignoring unknown topic")
+        return
+    if 'lon' not in payload:
+        log.info("ignoring")
+        return
     record = {
         "timestamp" : int(payload['tst']) * 1000,
         "user" : userFromTopic,

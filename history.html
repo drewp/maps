@@ -42,9 +42,9 @@
       <td>{{row.user_trunc}}</td>
       <td>{{row.raw.latitude}}</td>
       <td>{{row.raw.longitude}}</td>
-      <td>{{row.raw.alt}}</td>
-      <td>{{row.raw.acc}}</td>
-      <td>{{row.raw.batt}}</td>
+      <td>{{row.raw.alt || row.raw.altitude}}</td>
+      <td>{{row.raw.acc || row.raw.accuracy}}</td>
+      <td>{{row.raw.batt || row.raw.battery}}</td>
       <td>{{row.raw.source}}</td>
       <!-- <td>{{row.raw|json}}</td>  -->
     </tr>

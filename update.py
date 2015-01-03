@@ -97,7 +97,8 @@ def updateGet():
 @route("/update", method="POST")
 def updatePost():
     """
-    i forget what sender this was, originally. Now used for android sl4a one
+    i forget what sender this was, originally. Now used for android
+    sl4a one and mqtt.
     """
     # {u'horizAccuracy': 1616L, u'timestamp': Decimal('1251629916354'),
     # u'altitude': 0L, u'longitude': Decimal('-120.000000'),
