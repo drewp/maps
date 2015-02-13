@@ -3,12 +3,13 @@ from __future__ import division
 """
 query for people's previous update points in mongodb
 """
-import json, re, time, logging, datetime, urllib
+import json, re, time, logging, datetime, sys
+#import gevent.monkey
+#gevent.monkey.patch_all()
 from bottle import route, response, run, request
 from rdflib import Namespace, URIRef, Literal, RDFS
 from dateutil.tz import tzutc, tzlocal
 from pymongo import Connection
-from pyproj import Geod
 from describelocation import describeLocationFull, metersFromHome
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger()
@@ -26,7 +27,7 @@ mongo.ensure_index([('recv_time', 1)])
 TIME_SORT = ('timestamp', -1)
 def pt_sec(pt): return pt['timestamp']
 
-if 1:
+if 0:
     # owntracks is stalling on the 'tst' time value, but sending mostly ok data
     TIME_SORT = ('recv_time', -1)
     def pt_sec(pt): return pt['recv_time']
@@ -122,4 +123,5 @@ def filter_stale(recent):
             keep.append(r)
     return keep
 
-run(server='gevent', host="0.0.0.0", port=9099)
+run(server='cherrypy',
+    host="0.0.0.0", port=9099)

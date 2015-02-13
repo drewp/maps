@@ -1,6 +1,7 @@
 #!bin/python
 """
-receive updates from various phone sender programs; save them to mongodb; ping the notifier.
+receive updates from various phone sender programs; save them to
+mongodb; ping the notifier.
 
 No c3po announcements here.
 """
@@ -17,7 +18,8 @@ notifier = restkit.Resource("http://localhost:9098/")
 
 def finish(d):
     """
-    after gathering the attributes into the dict, call this to write it and ping notifier
+    after gathering the attributes into the dict, call this to write
+    it and ping notifier
     """
     print "writing to mongo %s" % json.dumps(d)
     print mongo.insert(d, safe=True)
@@ -32,8 +34,68 @@ def finish(d):
         notifier.post("newUpdate", payload=json.dumps(d))
     except restkit.RequestError:
         traceback.print_exc()
-        
 
+def secFromIso(iso):
+    return int(parse(iso).astimezone(tzlocal()).strftime('%s'))
+    
+def docFromParams(params, now):
+    try:
+        userUri = config['sendPositionDeviceMap'][
+            params.get('key',
+                       params.get('deviceid',
+                                  params.get('user', None)))]
+
+        if 'key' in params:
+            d = {
+                "source" : "OpenGeoTracker",
+                "timestamp" : now,
+                'longitude': float(params['longitude']),
+                'latitude': float(params['latitude']),
+                'altitude': float(params['altitude']),
+                'bearing': float(params['bearing']),
+                'tag': params.get('tag', ''),
+                'provider': params['provider'],
+                'speed': float(params['speed']),
+                'accuracy': float(params['accuracy']),
+                }
+        elif 'time' in params:
+            # GPSLogger, with my format string
+            d = {
+                'source': 'GPSLogger',
+                'timestamp': secFromIso(params['time']),
+                'latitude': float(params['lat']),
+                'longitude': float(params.get('longitude',
+                                              params.get('long', None))),
+                'altitude': float(params['alt']),
+                'speed': float(params['s']),
+                'battery': float(params['batt']),
+                'provider': params['prov'],
+            }
+            if 'acc' in params: d['accuracy'] = float(params['acc'])
+        else:
+            # UA like "SendLocation/1.2 CFNetwork/672.1.14 Darwin/14.0.0"
+            d = { "source" : "SendPosition",
+                  "timestamp" : now,
+                  "horizAccuracy" : float(params['hacc']),
+                  "altitude" : float(params['altitude']),
+                  "longitude" : float(params['lon']),
+                  "latitude" : float(params['lat']),
+                  "velocity" : float(params['speed']),
+                  "vertAccuracy" : float(params['vacc']),
+                  "heading" : float(params['heading'])
+                  }
+
+        for p in ['key', 'deviceid']:
+            if p in params:
+                d[p] = params[p]
+        if 'user' in params:
+            d['userParam'] = params['user']
+        d['user'] = userUri    
+        d['recv_time'] = now
+        return d
+    except:
+        print "on params %r" % params
+        raise
 @route("/update", method="GET")
 def updateGet():
     """SendPosition for iphone won't use POST *or* gpsLogging android app.
@@ -41,57 +103,8 @@ def updateGet():
     nor does opengeotracker for android
     """
     params = request.query
-
-
-    user = config['sendPositionDeviceMap'][
-        params.get('key',
-                   params.get('deviceid',
-                              params.get('user', None)))]
-
-    now = long(time.time() * 1000)
-
-    if 'key' in params:
-        d = {
-            "source" : "OpenGeoTracker",
-            "user" : user,
-            "timestamp" : now,
-            'longitude': float(params['longitude']),
-            'latitude': float(params['latitude']),
-            'altitude': float(params['altitude']),
-            'bearing': float(params['bearing']),
-            'tag': params.get('tag', ''),
-            'provider': params['provider'],
-            'speed': float(params['speed']),
-            'accuracy': float(params['accuracy']),
-            }
-    elif 'time' in params:
-        # GPSLogger, with my format string
-        d = {
-            'source': 'GPSLogger',
-            'user': user,
-            'timestamp': int(parse(params['time']).astimezone(tzlocal()).strftime('%s000')),
-            'latitude': float(params['lat']),
-            'longitude': float(params.get('longitude', params.get('long', None))),
-            'altitude': float(params['alt']),
-            'speed': float(params['s']),
-            'battery': float(params['batt']),
-            'provider': params['prov'],
-        }
-        if 'acc' in params: d['accuracy'] = float(params['acc'])
-    else:
-        d = { "source" : "SendPosition",
-              "user" : user,
-              "timestamp" : now,
-              "horizAccuracy" : float(params['hacc']),
-              "altitude" : float(params['altitude']),
-              "longitude" : float(params['lon']),
-              "latitude" : float(params['lat']),
-              "velocity" : float(params['speed']),
-              "vertAccuracy" : float(params['vacc']),
-              "heading" : float(params['heading'])
-              }
-        
-    d['recv_time'] = time.time()
+    now = time.time()
+    d = docFromParams(params, now)
     return finish(d)
 
 @route("/update", method="POST")
@@ -131,6 +144,7 @@ def myTrackingPost():
           distance before logging: 5
           start on boot: yes
     """
+    raise NotImplementedError("not updated")
     q = request.query
     doc = {
         'timestamp' : long(time.time()),
@@ -149,7 +163,8 @@ def myTrackingPost():
 def index():
     return "update.py service for maps. receives phone updates; writes mongodb"
 
-run(host='0.0.0.0', port=9033, server='cherrypy')
+if __name__ == '__main__':
+    run(host='0.0.0.0', port=9033, server='cherrypy')
 
 """
 // some other protcols from other phone senders which I haven't ported yet

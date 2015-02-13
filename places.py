@@ -4,6 +4,9 @@ from locations import readGoogleMapsLocations, listMapIds
 import json
 from urllib import urlencode
 from bottle import route, response, run, request
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 @route('/places')
 def places():
