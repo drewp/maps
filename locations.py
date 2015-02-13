@@ -1,4 +1,5 @@
-import time, restkit, logging, socket, json
+import time, restkit, logging, socket, json, zipfile
+from StringIO import StringIO
 log = logging.getLogger()
 
 from lxml import etree
@@ -36,12 +37,21 @@ def loadFromGoogle(id):
 
     report['mapSource'] = url
     feed = restkit.Resource(url).get().body_string()
-    log.info("load google map data, %s bytes in %s sec" % (len(feed), time.time() - t1))
-    report['result'] = feed
+    log.info("load google map data from %s, %s bytes in %s sec" % (
+        url, len(feed), time.time() - t1))
+    feed = maybeUnzip(feed)
     root = etree.fromstring(feed.encode('utf8'))
 
     #return parseGeoRss(root)
     return parseKml(root) or parseKmlOld(root), report
+
+def maybeUnzip(data):
+    """output=kml used to return xml; now it returns a ZIP with one file"""
+    try:
+        with zipfile.ZipFile(StringIO(data)) as zf:
+            return zf.read(zf.infolist()[0])
+    except zipfile.BadZipfile:
+        return data
     
 
 def parseKml(root):
