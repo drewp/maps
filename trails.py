@@ -87,25 +87,31 @@ def getUpdateMsg(movingUser=None, query=None):
     trailPoints = {}
     print "query %r" % query
 
+    now = time.time()
     for userQuery in query:
         user = userQuery['user']
         nlQuery = userQuery.get('query', 'last 80 points')
 
-        m = re.match(r'last (\d+) point', nlQuery)
+        m = re.match(r'last (\w+) point', nlQuery)
         if m:
             limit = int(m.group(1))
         else:
             limit = 80
+        spec = {'user':user}
+        m = re.match(r'last (\w+) hour', nlQuery)
+        if m:
+            spec['timestamp'] = {'$gt' : now - float(m.group(1)) * 3600}
 
-        old = (time.time() - 20*60*60)
         
-        recent = list(mongo.find({'user':user}, sort=[TIME_SORT],
+        recent = list(mongo.find(spec, sort=[TIME_SORT],
                                  limit=limit))
         recent.reverse()
-        recent = filter_stale(recent)
+        #recent = filter_stale(recent)
            
-        if len(recent) > 1 and pt_sec(recent[-2]) < old:
-            recent = recent[-4:]
+        #old = (now - 20*60*60)
+        #if len(recent) > 1 and pt_sec(recent[-2]) < old:
+        #    recent = recent[-4:]
+            
         for r in recent:
             del r['_id']
             r['t_ms'] = int(pt_sec(r) * 1000)

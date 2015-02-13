@@ -503,12 +503,14 @@ function PersonMarkers(coords, styles, trailPoints) {
 	jQuery.each(trailPoints.points, function (name, pts) {
             var settings = styles[name];
 
-	    var lastPoint = pts[pts.length - 1];
-            var ageSecs = ((+new Date()) - lastPoint.t_ms) / 1000;
-            var p = Point(lastPoint.longitude, lastPoint.latitude);
-	    var cp = coords.toCanvas(p);
-            markers.push({point: p, canvasPoint: cp, settings: settings, 
-                          ageSecs: ageSecs});
+            if (pts.length >= 1) {
+	        var lastPoint = pts[pts.length - 1];
+                var ageSecs = ((+new Date()) - lastPoint.t_ms) / 1000;
+                var p = Point(lastPoint.longitude, lastPoint.latitude);
+	        var cp = coords.toCanvas(p);
+                markers.push({point: p, canvasPoint: cp, settings: settings, 
+                              ageSecs: ageSecs});
+            }
         });
         drawDistances(ctx, markers);
         drawMarkers(ctx, markers);
@@ -767,10 +769,17 @@ function makeMap(id, _opts) {
 
 	trailPoints.points = data.trailPoints;
 
-	coords.viewAll(_.union(
-	    _.map(usersToFrame || [], 
-                  function (u) { return _.last(data.trailPoints[u]); }), 
-	    pointsToFrame || []));
+        var toView = [];
+        (usersToFrame || []).forEach(function(u) {
+            if (data.trailPoints[u].length >= 1) {
+                toView.push(_.last(data.trailPoints[u]));
+            }
+        });
+        (pointsToFrame || []).forEach(function(p) {
+            toView.push(p);
+        });
+        
+	coords.viewAll(toView);
 	dirtyCanvas();
     }
 

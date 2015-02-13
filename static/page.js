@@ -92,7 +92,7 @@ $(document).bind("pageinit", function () {
 	    // to server
 	    mode: ko.observable(initialMode), // or visible or frame
 
-            query: ko.observable("last 80 points"),
+            query: ko.observable("last 12 hours"),
         };
 	p.isVisible = ko.computed(function () {
 	    return p.mode() == "visible" || p.mode() == "frame";
@@ -116,8 +116,10 @@ $(document).bind("pageinit", function () {
 	log("updating trail display");
 	$.each(r.trailPoints, function (user, pts) {
 	    var latest = pts[pts.length - 1];
-	    byUser[user].lastSeen(mapShared.lastSeenFormat(latest.t_ms));
-	    byUser[user].recentPos(recentPosMessage(latest));
+            if (latest) {
+	        byUser[user].lastSeen(mapShared.lastSeenFormat(latest.t_ms));
+	        byUser[user].recentPos(recentPosMessage(latest));
+            }
 	});
 	m.gotNewTrails(r, 
                        people
