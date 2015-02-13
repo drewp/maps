@@ -133,7 +133,7 @@ def myTrackingPost():
     """
     q = request.query
     doc = {
-        'timestamp' : long(time.time() * 1000),
+        'timestamp' : long(time.time()),
 	'user': q.name,
 	'latitude': float(q.latitude),
 	'longitude': float(q.longitude),

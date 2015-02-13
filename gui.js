@@ -10,7 +10,7 @@ angular
                     $scope.status = "got "+result.events.length+" rows";
                     var now = +new Date();
                     $scope.events = result.events.map(function (raw) {
-                        var rowTime = new Date(raw.timestamp);
+                        var rowTime = new Date(raw.timestamp * 1000);
                         var recv_pretty = '?';
                         if (raw.recv_time) {
                             recv_pretty = new Date(raw.recv_time * 1000).toISOString();

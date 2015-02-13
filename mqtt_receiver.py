@@ -30,7 +30,7 @@ def on_message(mosq, obj, msg):
         log.info("ignoring")
         return
     record = {
-        "timestamp" : int(payload['tst']) * 1000,
+        "timestamp" : int(payload['tst']),
         "user" : userFromTopic,
         "longitude" : float(payload['lon']),
         "latitude" : float(payload['lat']),

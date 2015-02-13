@@ -24,7 +24,7 @@ mongo = Connection(m['host'], m['port'])[m['db']][m['collection']]
 mongo.ensure_index([('recv_time', 1)])
 
 TIME_SORT = ('timestamp', -1)
-def pt_sec(pt): return pt['timestamp'] / 1000
+def pt_sec(pt): return pt['timestamp']
 
 if 1:
     # owntracks is stalling on the 'tst' time value, but sending mostly ok data
@@ -118,7 +118,7 @@ def filter_stale(recent):
     keep = []
     for r in recent:
         if 'recv_time' not in r or (
-                r['recv_time'] - .001 * int(r['timestamp']) < 1500):
+                r['recv_time'] - int(r['timestamp']) < 1500):
             keep.append(r)
     return keep
 

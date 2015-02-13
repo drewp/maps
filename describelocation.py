@@ -12,7 +12,7 @@ milesPerMeter = 0.000621371192237334
 geod = Geod(ellps='WGS84')
 
 def metersFromHome(config, user, lng, lat):
-    locs = readGoogleMapsLocations(config['userMap'][str(user)])
+    locs = readGoogleMapsLocations(config['userMap'][str(user)])['places']
     for name, pt in locs:
         if name == 'home':
             break
@@ -48,10 +48,9 @@ def closestTarget(config, lng, lat, user):
     """name and meters to the closest known target"""
 
     mapId = config['userMap'][user]
-    locations = readGoogleMapsLocations(mapId)
+    locations = readGoogleMapsLocations(mapId)['places']
 
     closest = (None, 0)
-    
     for name, target in locations:
         try:
             _, _, dist = geod.inv(lng, lat, target[1], target[0])
