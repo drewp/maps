@@ -14,7 +14,7 @@ config = json.load(open('priv.json'))
 updateServer = restkit.Resource("http://bang:9033/update")
 
 client = mosquitto.Mosquitto("map-receiver")
-client.connect("prime.bigasterisk.com")
+client.connect("localhost")
 log.info('connected to %s', client._host)
 # need more auth here, to be able to read
 client.subscribe("/mqttitude/#", 0)

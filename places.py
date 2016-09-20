@@ -8,11 +8,15 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+def midFromKml(url):
+    return url.split('mid=')[-1]
+
 @route('/places')
 def places():
     return {'maps' : [{
-        'label': x,
-        'uri': '//bigasterisk.com/map/places/map?' + urlencode([('m', x)]),
+        'label': x['id'],
+        'uri': '//bigasterisk.com/map/places/map?' + urlencode([('m', x['id'])]),
+        'editLink': 'https://www.google.com/maps/d/edit?hl=en&authuser=0&mid=%s' % midFromKml(x['kml']),
         } for x in listMapIds()]}
 
 @route('/places/map')

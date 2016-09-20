@@ -6,7 +6,8 @@
     <link rel="Stylesheet" type="text/css" href="bundle.css?v={{bundleCss}}" media="all" >
 
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script> 
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js" type="text/javascript"></script>
+    <!-- /lib/jquery-2.0.3.min.js -->
 
     <script type="text/javascript">
       var updates = {{{updatesJson}}};
@@ -69,7 +70,9 @@
 	    {{#mapIds}}
 	    <li>
 	      <input data-role="none" type="checkbox" id="map-{{row}}" onclick="toggleMap('{{label}}', this)" autocomplete="no"/> 
-                <label for="map-{{row}}">{{label}} locations</label> <button data-role="none" class="mapRefresh" onclick="reloadMap('{{label}}', this)">Refresh from google</button>
+              <label for="map-{{row}}">{{label}} locations</label>
+              <a href="{{editLink}}">Edit</a>
+              <button data-role="none" class="mapRefresh" onclick="reloadMap('{{label}}', this)">Refresh from google</button>
                 </li>
 		{{/mapIds}}
 		<li><input data-role="none" type="checkbox" disabled="disabled"> Openstreetmap layer</li>
@@ -82,6 +85,9 @@
 	    <a data-ajax="false" href="history/">History</a>
 	    <a data-ajax="false" href="gmap">[googlemap]</a>
 	  </div>
+          <div>
+            <a href="logout">Logout</a>
+          </div>
 	  <div class="ctl">
 	    <div id="paramDisplay"></div>
 	  </div>

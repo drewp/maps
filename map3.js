@@ -167,7 +167,7 @@ app.get("/", function (req, res) {
             var j = 0;
             mapIds = placesResult.body.maps.map(function (m) { 
 		j++;
-		return {label: m.label, uri: m.uri, row: j} 
+		return {label: m.label, uri: m.uri, row: j, editLink: m.editLink} 
 	    });
             var ctx = {
                 bundleCss: am.cacheHashes['css'],

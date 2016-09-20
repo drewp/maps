@@ -20,7 +20,7 @@ def loadMappings():
 
 def listMapIds():
     mappings = loadMappings()
-    return [m['id'] for m in mappings]
+    return mappings
 
 def loadFromGoogle(id):
     report = {}
