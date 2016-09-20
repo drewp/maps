@@ -6,11 +6,14 @@ mongodb; ping the notifier.
 No c3po announcements here.
 """
 from bottle import route, run, request
-import json, time, restkit, traceback
+import json, time, restkit, traceback, logging
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 from pymongo import Connection
 
+
+logging.basicConfig()
+log = logging.getLogger()
 config = json.loads(open("priv.json").read())
 m = config['mongo']
 mongo = Connection(m['host'], m['port'])[m['db']][m['collection']]
@@ -40,10 +43,10 @@ def secFromIso(iso):
     
 def docFromParams(params, now):
     try:
-        userUri = config['sendPositionDeviceMap'][
-            params.get('key',
-                       params.get('deviceid',
-                                  params.get('user', None)))]
+        userParam = params.get('key',
+                               params.get('deviceid',
+                                          params.get('user', None)))
+        userUri = config['sendPositionDeviceMap'][userParam]
 
         if 'key' in params:
             d = {
@@ -94,7 +97,7 @@ def docFromParams(params, now):
         d['recv_time'] = now
         return d
     except:
-        print "on params %r" % params
+        log.error("on params %r" % dict(params))
         raise
 @route("/update", method="GET")
 def updateGet():
