@@ -1,0 +1,27 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="../bower_components/leaflet-map/leaflet-map.html">
+
+<dom-module id="bigast-map-view">
+  <template>
+    <style include="shared-styles">
+      :host {
+          display: block;
+          height: 100%;
+      }
+     leaflet-map {
+         height: 100%;
+     }
+
+    </style>
+     <leaflet-map fit-to-markers>
+     
+     </leaflet-map>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'bigast-map-view'
+    });
+  </script>
+</dom-module>
