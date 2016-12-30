@@ -9,6 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html"
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="bigast-map-history">
@@ -16,22 +17,91 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <style include="shared-styles">
       :host {
         display: block;
-
         padding: 10px;
       }
     </style>
 
     <div class="card">
-      <div class="circle">2</div>
-      <h1>View Two</h1>
-      <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
-      <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum. Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
+      <h1>History</h1>
+      <fieldset>
+        <div>User must contain: <input type="text" value="{{userSubstr::input}}"></div>
+        <button on-click="onRefresh">Refresh</button>
+      </fieldset>
+      <div>{{status}}</div>
+      <iron-ajax id="get" url="/map/history/events" last-response="{{result}}"></iron-ajax>
+      <table>
+        <tr>
+          <th>minsAgo</th>
+          <th>timestamp</th>
+          <th>timestamp</th>
+          <th>recv latency sec</th>
+          <th>user</th>
+          <th>lat</th>
+          <th>lng</th>
+          <th>alt</th>
+          <th>acc</th>
+          <th>batt</th>
+          <th>src</th>
+        </tr>
+        <template is="dom-repeat" items="{{displayRows(result)}}">
+          <tr class="event">
+            <td>{{item.minsAgo}}</td>
+            <td>{{item.pretty}}</td>
+            <td>{{item.raw.timestamp}}</td>
+            <td>{{item.recv_latency}}</td>
+            <td>{{item.user_trunc}}</td>
+            <td>{{item.raw.latitude}}</td>
+            <td>{{item.raw.longitude}}</td>
+            <td>{{item.alt}}</td>
+            <td>{{item.acc}}</td>
+            <td>{{item.batt}}</td>
+            <td>{{item.raw.source}}</td>
+            <!-- <td>{{item.raw|json}}</td>  -->
+          </tr>
+        </template>
+      </table>
+
     </div>
   </template>
 
   <script>
     Polymer({
-      is: 'bigast-map-history'
+        is: 'bigast-map-history',
+        properties: {
+            status: {type: String},
+            userSubstr: {type: String, value: ''},
+            result: {type: Object},
+        },
+        ready: function() {
+            this.status = "start";
+        },
+        onRefresh: function(ev) {
+            this.status = "fetching . . .";
+            this.$.get.params = {'userSubstr': this.userSubstr};
+            this.$.get.generateRequest();
+        },
+        displayRows: function(result) {
+            this.status = "got "+result.events.length+" rows";
+            var now = +new Date();
+            return result.events.map(function (raw) {
+                var rowTime = new Date(raw.timestamp * 1000);
+                var recv_pretty = '?';
+                if (raw.recv_time) {
+                    recv_pretty = new Date(raw.recv_time * 1000).toISOString();
+                }
+                return {
+                    raw: raw,
+                    pretty: rowTime.toISOString(),
+                    recv_pretty: recv_pretty,
+                    recv_latency: raw.recv_time - raw.timestamp,
+                    minsAgo: .01 * Math.round(100 * ((now - (+rowTime)) / 1000 / 60)),
+                    user_trunc: raw.user.replace(/.*[#\/]/, ''),
+                    alt: raw.alt || raw.altitude,
+                    acc: raw.acc || raw.accuracy,
+                    batt: raw.batt || raw.battery,
+                };
+            });
+        }
     });
   </script>
 </dom-module>
