@@ -1,27 +1,68 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="../bower_components/leaflet-map/leaflet-map.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 
 <dom-module id="bigast-map-view">
   <template>
     <style include="shared-styles">
-      :host {
-          display: block;
-          height: 100%;
-      }
+     :host {
+         display: block;
+         height: 100%;
+     }
      leaflet-map {
          height: 100%;
      }
 
     </style>
-     <leaflet-map fit-to-markers>
-     
-     </leaflet-map>
+
+    <iron-ajax id="trails"
+               url="https://bigasterisk.com/map/trails?q=%5B%7B%22label%22%3A%22Drew%22%2C%22user%22%3A%22http%3A%2F%2Fbigasterisk.com%2Ffoaf.rdf%23drewp%22%2C%22recentPos%22%3A%22%22%2C%22mode%22%3A%22frame%22%2C%22query%22%3A%22last+12+hours%22%2C%22isVisible%22%3Atrue%2C%22id%22%3A%22elem1%22%7D%2C%7B%22label%22%3A%22Kelsi%22%2C%22user%22%3A%22http%3A%2F%2Fbigasterisk.com%2Fkelsi%2Ffoaf.rdf%23kelsi%22%2C%22recentPos%22%3A%22%22%2C%22mode%22%3A%22frame%22%2C%22query%22%3A%22last+12+hours%22%2C%22isVisible%22%3Atrue%2C%22id%22%3A%22elem4%22%7D%5D"
+               auto
+               with-credentials
+               last-response="{{trails}}"></iron-ajax>
+
+
+    <template is="dom-repeat" repeat="{{trailsDisplay(trails)}}">
+      <div>{{item}}</div>
+    </template>
+    <leaflet-map fit-to-markers max-zoom="16">
+      
+      <leaflet-tilelayer 
+          url="https://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}"
+          minzoom="2" maxzoom="16">
+        Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC
+      </leaflet-tilelayer>
+      
+      <leaflet-polyline>
+        <leaflet-point longitude="77.6400" latitude="12.9100"> </leaflet-point>
+        <leaflet-point longitude="77.6229" latitude="12.9259"> </leaflet-point>
+        <leaflet-point longitude="77.6499" latitude="12.9699"> </leaflet-point>
+        <leaflet-point longitude="77.6119" latitude="12.9738"> </leaflet-point>
+      </leaflet-polyline>
+      
+      <leaflet-icon id="myicon" 
+                    icon-url="https://stendhalgame.org/images/mapmarker/me.png"> </leaflet-icon>
+
+      <leaflet-marker latitude="77.6" longitude="12.9"
+                      title="Element" icon="myicon">
+      </leaflet-marker> 
+      
+    </leaflet-map>
   </template>
 
   <script>
-    Polymer({
-      is: 'bigast-map-view'
-    });
+   Polymer({
+       is: 'bigast-map-view',
+       properties: {
+           trails: {type: Object},
+       },
+       ready: function() {
+           L.Icon.Default.imagePath = 'bower_components/leaflet/dist/images';
+       },
+       trailsDisplay: function(trails) {
+           return trails.trailPoints['http://bigasterisk.com/foaf.rdf#drewp'];
+           },
+   });
   </script>
 </dom-module>

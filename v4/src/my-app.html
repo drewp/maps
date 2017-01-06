@@ -67,7 +67,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <app-location route="{{route}}"></app-location>
     <app-route
         route="{{route}}"
-        pattern="/map/v4/:page/"
+        pattern="/map/v4/#:page"
         data="{{routeData}}"
         tail="{{subroute}}"></app-route>
 
@@ -76,9 +76,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <app-drawer>
         <app-toolbar>Menu</app-toolbar>
         <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-          <a name="view" href="/map/v4/view/">Map</a>
-          <a name="history" href="/map/v4/history/">History</a>
-          <a name="settings" href="/map/v4/settings/">Settings</a>
+          <a name="view" href="/map/v4/#view">Map</a>
+          <a name="history" href="/map/v4/#history">History</a>
+          <a name="settings" href="/map/v4/#settings">Settings</a>
         </iron-selector>
       </app-drawer>
 
@@ -123,7 +123,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       ],
 
       _routePageChanged: function(page) {
-        this.page = page || 'map';
+        this.page = page || 'view';
       },
 
       _pageChanged: function(page) {
