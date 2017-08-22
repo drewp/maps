@@ -6,16 +6,23 @@
 <dom-module id="bigast-trail">
   <template>
     
-    <leaflet-polyline container="{{container}}">
+    <leaflet-polyline container="{{container}}"
+                      xcolor="{{userStyle.trailStroke}}"
+                      color="rgb(1,0,0)"
+                      weight="4" >
       <template is="dom-repeat" items="{{pts}}">
         <leaflet-point longitude="{{item.x}}" latitude="{{item.y}}"> </leaflet-point>
       </template>
     </leaflet-polyline>
-
-    <leaflet-marker container="{{container}}"
+    
+    <leaflet-marker id="marker" container="{{container}}"
                     latitude="{{latitude}}" longitude="{{longitude}}"
-                    title="{{title}}" icon="myicon">
+                    >
+      popup details here
     </leaflet-marker>
+    <leaflet-circle latitude="{{latitude}}" longitude="{{longitude}}" radius="300">
+      Circle
+    </leaflet-circle>
   </template>
   <script>
    Polymer({
@@ -27,12 +34,24 @@
            longitude: { type: Number, value: 0 },
            title: { type: String },
            pts: { type: Object, value: [] },
+           userStyle: { type: Object },
+       },
+       observers: [
+           '_updateIcon(title)',
+       ],
+       _updateIcon: function(title) {
+           this.$.marker.icon = L.divIcon({html: this.userStyle.initial});
        },
        onResp: function(resp) {
            var pts = Object.values(resp.trailPoints)[0];
            this.latitude = pts[pts.length-1].latitude;
            this.longitude = pts[pts.length-1].longitude;
-           this.pts = pts.map(function(p) { return { y: p.latitude, x: p.longitude }; });
+           this.pts = pts.map((p) => { return { y: p.latitude, x: p.longitude }; });
+
+           if (!this.doneFirstUpdate) {
+               this.parentElement._fitToMarkers();
+               this.doneFirstUpdate = true;
+           }
        }
    });
   </script>
@@ -50,7 +69,7 @@
      }
 
     </style>
-   <iron-ajax id="config"
+    <iron-ajax id="config"
                url="https://bigasterisk.com/map/config"
                auto
                with-credentials
@@ -63,11 +82,9 @@
           minzoom="2" maxzoom="16">
         Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC
       </leaflet-tilelayer>
-            
+      
       <leaflet-icon id="myicon" 
                     icon-url="https://stendhalgame.org/images/mapmarker/me.png"> </leaflet-icon>
-
-    </leaflet-marker>
 
       <template is="dom-repeat" items="{{trailsDisplay(config)}}">
         <iron-ajax url="{{item.trailsUrl}}"
@@ -75,7 +92,7 @@
                    with-credentials
                    last-response="{{item.resp}}"
         ></iron-ajax>
-        <bigast-trail resp="{{item.resp}}" title="{{item.user}}"></bigast-trail>
+        <bigast-trail resp="{{item.resp}}" title="{{item.user}}" user-style="{{item.userStyle}}"></bigast-trail>
       </template>
       
     </leaflet-map>
@@ -97,7 +114,7 @@
                    query: 'last 12 hours',
                }]));
                return {
-                   style: config.style,
+                   userStyle: config.style[user],
                    user: user,
                    trailsUrl: url
                };
