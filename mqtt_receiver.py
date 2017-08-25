@@ -5,7 +5,8 @@ phone app sends to mosquitto broker
 we subscribe on that broker and send http to update.py
 """
 
-import mosquitto, json, restkit, logging
+import json, restkit, logging
+import paho.mqtt.client
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 log = logging.getLogger()
@@ -13,7 +14,7 @@ log = logging.getLogger()
 config = json.load(open('priv.json'))
 updateServer = restkit.Resource("http://bang:9033/update")
 
-client = mosquitto.Mosquitto("map-receiver")
+client = paho.mqtt.client.Client("map-receiver")
 client.connect("localhost")
 log.info('connected to %s', client._host)
 # need more auth here, to be able to read
